@@ -21,3 +21,7 @@ Le test du scanner utilise un code-barres Code 128 synthétique. La fiabilité s
 ## Suite du projet
 
 Le module de ration a été ajouté après la première livraison sanitaire. Sa réutilisation depuis le dépôt privé a été autorisée ; voir RATIONS_LOCAL_REVIEW.md. Les traitements de lot, la validation réglementaire complète et la synchronisation entre appareils ne sont pas encore implémentés.
+
+## Validation sur un document réel
+
+Le 28 octobre 2026, décodage réussi de la photo complète fournie par le propriétaire après ajout d’une recherche par zones dans l’image. Le code de l’attestation sanitaire est en Code 128 et contient un préfixe FR + dix chiffres, deux espaces et 24 chiffres supplémentaires. Pour ce format observé, seul le numéro initial est extrait ; les autres positions ne sont pas interprétées. Ce constat n’établit pas une compatibilité universelle avec tous les passeports/ASDA. La photo et son contenu réel ne sont pas publiés dans le dépôt.

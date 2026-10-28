@@ -19,7 +19,10 @@ export function validatePassport(fields,animals,now){
 
 // No guessing from compound payloads or adjacent parent identifiers.
 export function parseBarcode(value){
- const compact=String(value||'').trim().toUpperCase().replace(/\s/g,'');
+ const raw=String(value||'').trim().toUpperCase();
+ const asda=raw.match(/^FR(\d{10}) {2}\d{24}$/);
+ if(asda)return 'FR '+asda[1];
+ const compact=raw.replace(/\s/g,'');
  if(/^FR\d{10}$/.test(compact))return 'FR '+compact.slice(2);
  if(/^\d{10}$/.test(compact))return 'FR '+compact;
  return '';
