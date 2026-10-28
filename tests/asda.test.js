@@ -1,0 +1,7 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {parseAsda2007} from '../src/passport.js';
+import {BREED_CODES_2018} from '../src/breed-codes.js';
+const make=({race='34',parents='3879',date='12052025',sex='2',country='FR',reserved='0'}={})=>country+'1234567890  '+'1'+race+parents+date+sex+reserved+'1'+'12345678'+'87654321'+'123456789012';
+test('ASDA 2007 : positions exactes des sept champs et parents père-mère',()=>{const raw=make();assert.equal(raw.length,60);assert.deepEqual(parseAsda2007(raw,'2026-10-28').fields,{number:'FR 1234567890',birth:'2025-05-12',sex:'F',race:'LIMOUSINE',father:'CHAROLAISE',mother:"BLONDE D'AQUITAINE"});assert.equal(parseAsda2007(raw+'\r\n').format,'ASDA-2007');});
+test('ASDA : aucun décalage toléré, dates impossibles/futures, sexe et zone réservée invalides refusés',()=>{for(const raw of [make().slice(1),make()+'1',make().replace('  ',' '),make({date:'31022025'}),make({date:'01012999'}),make({sex:'3'}),make({reserved:'1'}),make({country:'DE'})])assert.equal(parseAsda2007(raw),null);});
+test('Codes inconnus et 00 ne deviennent jamais une race inventée',()=>{const a=parseAsda2007(make({race:'99',parents:'0000'}));assert.equal(a.fields.race,'');assert.equal(a.fields.father,'');assert.equal(a.warnings.length,1);assert.equal(Object.keys(BREED_CODES_2018).length,74);assert.equal(BREED_CODES_2018['39'],'CROISÉ');assert.equal(BREED_CODES_2018['91'],'Programme RED HOLSTEIN x ABONDANCE');});

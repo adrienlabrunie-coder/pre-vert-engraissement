@@ -1,3 +1,4 @@
+import {breedLabel} from './breed-codes.js';
 // Conservative extraction: identifiers are candidates, never silently assigned.
 export function parsePassport(text) {
  const source=String(text||'').replace(/\r/g,'');
@@ -26,4 +27,19 @@ export function parseBarcode(value){
  if(/^FR\d{10}$/.test(compact))return 'FR '+compact.slice(2);
  if(/^\d{10}$/.test(compact))return 'FR '+compact;
  return '';
+}
+
+// ASDA 2007: 14 text characters + 46 digits. Code 128 mode-switch is not payload.
+export function parseAsda2007(value,now=new Date().toISOString().slice(0,10)){
+ const raw=String(value||'').replace(/[\r\n]+$/,'').toUpperCase();
+ if(!/^[A-Z]{2}[A-Z0-9 ]{12}\d{46}$/.test(raw))return null;
+ const country=raw.slice(0,2),identifier=raw.slice(2,14).trimEnd();
+ if(!identifier||!/^\S+ *$/.test(raw.slice(2,14)))return null;
+ if(country!=='FR'||!/^\d{10}$/.test(identifier))return null;
+ if(!'012'.includes(raw[14])||raw[30]!=='0'||!'01234569'.includes(raw[31]))return null;
+ const date=raw.slice(21,29),birth=`${date.slice(4)}-${date.slice(2,4)}-${date.slice(0,2)}`;
+ const parsed=new Date(birth+'T12:00:00Z');
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(birth)||!Number.isFinite(parsed.getTime())||parsed.toISOString().slice(0,10)!==birth||birth>now||!['1','2'].includes(raw[29]))return null;
+ const codes={race:raw.slice(15,17),father:raw.slice(17,19),mother:raw.slice(19,21)};
+ return {fields:{number:'FR '+identifier,birth,sex:raw[29]==='1'?'M':'F',...Object.fromEntries(Object.entries(codes).map(([k,v])=>[k,breedLabel(v)]))},codes,format:'ASDA-2007',warnings:Object.entries(codes).filter(([,v])=>v!=='00'&&!breedLabel(v)).map(([k,v])=>`Code racial ${k} ${v} absent du référentiel 2018 : saisie manuelle nécessaire.`)};
 }
