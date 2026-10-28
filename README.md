@@ -59,3 +59,7 @@ npm run test:browser
 ```
 
 Le test navigateur démarre lui-même Vite sur `127.0.0.1:5178` et utilise uniquement un navigateur de test isolé. Pour tester le build et le rechargement hors ligne, lancer `TEST_PRODUCTION=1 npm run test:browser` sous un shell compatible. Les détails de l’audit et les limites se trouvent dans [docs/POINTAGE_REVIEW.md](docs/POINTAGE_REVIEW.md).
+
+## Passeports et sanitaire
+
+Lecture locale de passeports et registre sanitaire : fonctionnement, tests et limites dans [docs/PASSEPORT_SANITAIRE.md](docs/PASSEPORT_SANITAIRE.md).
