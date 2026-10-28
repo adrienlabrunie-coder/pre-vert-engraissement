@@ -33,7 +33,7 @@ Pour installer l'application sur téléphone, la servir en **HTTPS** (ou localho
 - **Données initiales fictives** fournies pour démonstration : les supprimer avant utilisation réelle.
 - **Aucun OCR de passeport**, aucune intégration Beef Ration Planner ni DMV à ce stade.
 - **Aucune validation sanitaire, réglementaire BIO ou calcul automatique des délais d'attente** : le champ de délai est une saisie libre et doit être vérifié sur les sources réglementaires et vétérinaires applicables.
-- Le pointage V1 couvre les postes de conformation, format, fonctionnalité et état. Il ne constitue pas une reproduction complète du manuel : il manque les illustrations détaillées, les particularités de notation, les défauts codifiés et les postes mamelle.
+- Le pointage guidé couvre 31 postes, dont la mamelle en option pour les femelles. Les aides sont reformulées à partir du manuel Idele 2014, avec pages de référence et contrôles des aplombs. Les illustrations et l’intégralité des explications du manuel ne sont pas reproduites. Ce module ne constitue pas une certification officielle du pointage.
 - Une PWA hors ligne ne garantit pas la disponibilité de toutes les ressources si elle n'a jamais été chargée en ligne.
 
 ## Suite technique conseillée
@@ -43,3 +43,19 @@ Supabase/PostgreSQL + authentification et RLS, IndexedDB pour l'offline-first, s
 ## Import dans GitHub / Lovable
 
 Créer un dépôt GitHub et y pousser les fichiers de ce dossier (sans `node_modules` ni `dist`). Ensuite utiliser les fonctionnalités d'importation de dépôt disponibles dans l'environnement Lovable. Vérifier la prise en charge du flux d'importation avant de s'engager dans une migration.
+
+## Pointage guidé et validation
+
+Depuis **Pointages**, choisir un bovin pour consulter sa fiche et son historique, puis **Nouveau pointage**. Renseigner la date et le contexte, parcourir les familles de critères et vérifier le récapitulatif. Il est possible de laisser des postes non observés. Les observations générales et par poste sont datées avec le pointage.
+
+Les clés `pv_animals` et `pv_lots`, les anciens codes et la structure `scores[].values` restent identiques. Les champs de la nouvelle saisie sont additifs. Exporter une sauvegarde avant une mise à jour ; conserver la même origine (protocole, hôte, port) pour retrouver le stockage du navigateur.
+
+```bash
+npm ci
+npm test
+npm run build
+npx playwright install chromium
+npm run test:browser
+```
+
+Le test navigateur démarre lui-même Vite sur `127.0.0.1:5178` et utilise uniquement un navigateur de test isolé. Pour tester le build et le rechargement hors ligne, lancer `TEST_PRODUCTION=1 npm run test:browser` sous un shell compatible. Les détails de l’audit et les limites se trouvent dans [docs/POINTAGE_REVIEW.md](docs/POINTAGE_REVIEW.md).
