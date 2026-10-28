@@ -7,3 +7,13 @@
 .health-form legend{max-width:100%;white-space:normal}
 .health-form input,.health-form select{min-width:0;max-width:100%}
 .source-links a,.treatment-card p{overflow-wrap:anywhere}
+
+.ration-planner .ration-line{padding:16px;border:1px solid #d9e4dc;border-radius:12px;margin:12px 0}.ration-planner .check-row{display:flex;align-items:center;gap:10px}.ration-planner .check-row input{width:20px;flex-shrink:0}.ration-planner select{max-width:100%;min-width:0}.ration-planner details{padding:12px;border-bottom:1px solid #d9e4dc}.ration-planner summary{cursor:pointer}.ration-planner td,.ration-planner th{padding:10px;text-align:left}
+.ration-planner .table-wrap{max-width:100%;overflow-x:auto}
+.ration-planner .panel,.ration-planner .form,.ration-planner .form-grid>label{min-width:0}
+.ration-planner input{min-width:0;max-width:100%}
+.ration-planner .form{grid-template-columns:minmax(0,1fr)}
+.ration-planner .form>*{min-width:0;max-width:100%}
+.ration-planner button{white-space:normal}
+@media(max-width:500px){.ration-planner .form-grid{grid-template-columns:minmax(0,1fr)}}
+.barcode-video{width:100%;max-height:240px;background:#092c40;border-radius:12px;object-fit:cover}.passport-form .source-links{flex-wrap:wrap}

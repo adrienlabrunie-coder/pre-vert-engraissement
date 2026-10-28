@@ -2,7 +2,7 @@
 
 ## Livraison
 
-Lecture de photo locale via Tesseract.js 7 et modèle français, sans service OCR payant et sans envoi de photo. Les ressources sont copiées depuis les dépendances au démarrage et à la compilation (`scripts/prepare-ocr.mjs`). La première utilisation nécessite leur chargement ; le service worker les conserve à la demande. Le texte reste modifiable, les numéros multiples demandent une sélection et la vérification humaine est obligatoire avant préremplissage. Aucun bovin n’est créé automatiquement. Formats d’identification assistés : FR et dix chiffres ; les autres pays restent accessibles par saisie manuelle.
+Lecture locale des codes-barres par ZXing, via caméra ou photo du code. Aucun OCR, aucune IA et aucun service distant. Le numéro FR suivi de dix chiffres (ou dix chiffres avec confirmation explicite du pays FR) est proposé. Les autres contenus restent affichés bruts sans extraction supposée. Naissance, sexe et races sont à compléter manuellement. Le décodage d’un code synthétique est testé ; le format complet des passeports de l’élevage reste à vérifier sur un exemplaire réel. La caméra nécessite HTTPS et l’autorisation du navigateur.
 
 Le registre sanitaire regroupe les traitements individuels et exporte un CSV. Dose, voie, ordonnance, vétérinaire, référence, dernière administration et rémanence sont des champs distincts. Les anciennes saisies libres sont conservées.
 
@@ -16,8 +16,8 @@ Clés `pv_animals` / `pv_lots` et format JSON version 1 conservés. Les nouveaux
 
 Commandes : `npm test`, `npm run build`, `TEST_PRODUCTION=1 npm run test:browser`, `npm run test:passport`, `node tests/health-browser.cjs`.
 
-Le test OCR utilise une véritable reconnaissance sur une image synthétique. La fiabilité sur des photos de passeports réels, prises dans l’élevage, reste à valider. Le parcours sanitaire couvre le refus sans source vérifiée, le calcul avec changement d’heure, quatre largeurs d’écran et la conservation d’un traitement ancien. Le test général couvre aussi les données de pointage historiques et le mode hors ligne.
+Le test du scanner utilise un code-barres Code 128 synthétique. La fiabilité sur des photos de passeports réels, prises dans l’élevage, reste à valider. Le parcours sanitaire couvre le refus sans source vérifiée, le calcul avec changement d’heure, quatre largeurs d’écran et la conservation d’un traitement ancien. Le test général couvre aussi les données de pointage historiques et le mode hors ligne.
 
 ## Suite du projet
 
-Le moteur de ration n’est pas inclus dans cette livraison. Sa réutilisation depuis un dépôt privé dans ce dépôt public nécessite une validation de publication spécifique. Les traitements de lot, la validation réglementaire complète et la synchronisation entre appareils ne sont pas encore implémentés.
+Le module de ration a été ajouté après la première livraison sanitaire. Sa réutilisation depuis le dépôt privé a été autorisée ; voir RATIONS_LOCAL_REVIEW.md. Les traitements de lot, la validation réglementaire complète et la synchronisation entre appareils ne sont pas encore implémentés.

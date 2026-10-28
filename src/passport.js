@@ -16,3 +16,11 @@ export function validatePassport(fields,animals,now){
  if(!['M','F'].includes(fields.sex))errors.push('Vérifiez le sexe de l’animal.');
  return errors;
 }
+
+// No guessing from compound payloads or adjacent parent identifiers.
+export function parseBarcode(value){
+ const compact=String(value||'').trim().toUpperCase().replace(/\s/g,'');
+ if(/^FR\d{10}$/.test(compact))return 'FR '+compact.slice(2);
+ if(/^\d{10}$/.test(compact))return 'FR '+compact;
+ return '';
+}
