@@ -2,7 +2,7 @@ export const MUSCLE_CODES=['ARC','DEE','EPD','LAC','LAD','LOC'];
 export function normalizeEurop(value){
  const text=String(value||'').toUpperCase().replace(/\s/g,'');
  if(!text)return '';
- if(!/^[EUROP][+-]?[1-5]$/.test(text))throw new Error('Classement estimé : utilisez E, U, R, O ou P, un + ou − facultatif, puis un état de 1 à 5 (ex. U-3, R+2).');
+ if(!/^[EUROP][+=-]?[1-5]$/.test(text))throw new Error('Classement estimé : utilisez E, U, R, O ou P, un +, = ou − facultatif, puis un état de 1 à 5 (ex. U-3, R+2).');
  return text;
 }
 export function latestPointage(animal){return [...(animal.scores||[])].sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.createdAt||'').localeCompare(a.createdAt||''))[0]||null;}
