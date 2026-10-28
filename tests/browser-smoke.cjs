@@ -24,11 +24,12 @@ const {spawn}=require('node:child_process');
   await page.getByLabel('Date du pointage *').fill('2026-10-20');
   await page.getByLabel('Nom / code du pointeur').fill('Technicien test');
   assert.equal(await page.getByLabel('Observer la mamelle').count(),0);
-  await page.getByRole('button',{name:'Culotte',exact:true}).click();
+  await page.getByRole('button',{name:'Arrondi de culotte',exact:true}).click();
   await page.getByRole('button',{name:'ARC : 8 sur 10',exact:true}).click();
   await page.getByLabel('Observation pour ARC').fill('Profil observé sur sol plat.');
-  for(const [name,code] of [['Dos','EPD'],['Épaule','DEE'],['Note d’état','ETA']]){
+  for(const [name,code] of [['Dessus d’épaule','DEE'],['Épaisseur du dessus','EPD'],['Largeur de culotte','LAC'],['Largeur du dos','LAD'],['Longueur de culotte','LOC'],['État corporel','ETA']]){
    await page.getByRole('button',{name,exact:true}).click();
+   await page.locator('.scoring-photo').evaluate(img=>img.decode());
    await page.getByRole('button',{name:code+' : 5 sur 10',exact:true}).click();
   }
   for(const width of [1280,768,375,320]){
@@ -50,7 +51,7 @@ const {spawn}=require('node:child_process');
    await page.evaluate(()=>navigator.serviceWorker.ready);
    await page.reload();await page.context().setOffline(true);await page.reload();
    assert.ok(await page.getByRole('button',{name:/FR TEST 001/}).isVisible());
-   for(const asset of ['meat-zones.webp','ration-banner.webp'])assert.ok(await page.evaluate(async asset=>(await fetch('/'+asset)).ok,asset));
+   for(const asset of ['scoring/ARC.webp','scoring/DEE.webp','scoring/EPD.webp','scoring/LAC.webp','scoring/LAD.webp','scoring/LOC.webp','scoring/ETA.webp','ration-banner.webp'])assert.ok(await page.evaluate(async asset=>(await fetch('/'+asset)).ok,asset));
    const offlineImage=await page.evaluate(async()=>{const response=await fetch('/manual/idele-2014-p63.webp');return response.ok&&(await response.blob()).size>1000});assert.ok(offlineImage,'planche du manuel disponible hors ligne');
    await page.context().setOffline(false);
   }
@@ -59,8 +60,8 @@ const {spawn}=require('node:child_process');
   assert.deepEqual({...saved[0],scores:animal.scores},animal);
   assert.equal(saved[0].scores[1].notes,'Pointage partiel de contrôle.');
   assert.equal(saved[0].scores[1].values.ETA,5);
-  assert.deepEqual(Object.keys(saved[0].scores[1].values).sort(),['ARC','DEE','EPD','ETA']);
-  assert.equal(saved[0].scores[1].protocol,'prevert-viande-4-v1');
+  assert.deepEqual(Object.keys(saved[0].scores[1].values).sort(),['ARC','DEE','EPD','ETA','LAC','LAD','LOC']);
+  assert.equal(saved[0].scores[1].protocol,'prevert-conformation-etat-7-v1');
   await page.setViewportSize({width:1280,height:900});
   await page.getByRole('button',{name:/FR TEST 001/}).click();
   await page.screenshot({path:'/tmp/prevert-profile-desktop.png',fullPage:true});
@@ -70,13 +71,13 @@ const {spawn}=require('node:child_process');
   assert.ok(await page.getByText('Profil observé sur sol plat.',{exact:true}).isVisible());
   await page.screenshot({path:'/tmp/prevert-historique-desktop.png',fullPage:true});
   await page.getByRole('button',{name:'Nouveau pointage',exact:false}).click();
-  await page.getByRole('button',{name:'Culotte',exact:true}).click();
+  await page.getByRole('button',{name:'Arrondi de culotte',exact:true}).click();
   await page.getByRole('button',{name:'ARC : 1 sur 10',exact:true}).click();
   page.once('dialog',d=>d.dismiss());await page.getByRole('button',{name:'Fermer',exact:true}).click();assert.ok(await page.locator('.dialog').isVisible());
   page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'Fermer',exact:true}).click();await page.waitForSelector('.dialog',{state:'detached'});
   // Simulate quota failure: the form must stay open and existing records unchanged.
   await page.getByRole('button',{name:'Nouveau pointage',exact:false}).click();
-  await page.getByRole('button',{name:'Culotte',exact:true}).click();
+  await page.getByRole('button',{name:'Arrondi de culotte',exact:true}).click();
   await page.getByRole('button',{name:'ARC : 1 sur 10',exact:true}).click();
   await page.getByRole('button',{name:'Vérification',exact:true}).click();
   await page.evaluate(()=>{Storage.prototype.setItem=function(){throw new DOMException('Quota','QuotaExceededError')}});
@@ -84,6 +85,6 @@ const {spawn}=require('node:child_process');
   assert.match(await page.getByRole('alert').innerText(),/Enregistrement impossible/);
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('pv_animals'))[0].scores.length),2);
   assert.deepEqual(failures,[]);
-  console.log('PASS: parcours guidé, quatre postes viande illustrés, 4 tailles d’écran, historique ancien, rechargement, abandon protégé et échec stockage.');
+  console.log('PASS: parcours guidé, sept postes conformation et état illustrés, 4 tailles d’écran, historique ancien, rechargement, abandon protégé et échec stockage.');
  } finally {await browser?.close();server?.kill()}
 })().catch(e=>{console.error(e);process.exit(1)});
