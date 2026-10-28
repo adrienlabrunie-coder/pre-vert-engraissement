@@ -65,3 +65,7 @@ Le test navigateur démarre lui-même Vite sur `127.0.0.1:5178` et utilise uniqu
 Lecture locale de passeports et registre sanitaire : fonctionnement, tests et limites dans [docs/PASSEPORT_SANITAIRE.md](docs/PASSEPORT_SANITAIRE.md).
 
 Le scanner lit désormais les **codes-barres** localement (caméra ou photo du code), sans OCR ni IA. Il préremplit uniquement un identifiant reconnu. Le module de ration propose des calculs estimatifs et des instantanés datés par bovin ou lot ; les mâles entiers ne sont pas pris en charge par ce moteur.
+
+## Élevage partagé
+
+La connexion d’équipe, le cache hors ligne et la synchronisation sont décrits dans [le mode d’emploi](docs/PARTAGE_MODE_EMPLOI.md). L’import initial est explicite et conserve les anciennes données locales. Les sauvegardes automatiques indépendantes restent à configurer.

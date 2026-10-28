@@ -1,7 +1,7 @@
 # Base partagée, mode hors ligne et Android
 
 État au 28 octobre 2026. Besoin confirmé : 2 à 5 utilisateurs, un élevage commun.
-Ce document décrit la prochaine évolution ; ni authentification, ni synchronisation cloud, ni sauvegarde automatique ne sont encore activées.
+Ce document conserve le plan architectural. La connexion et la synchronisation ont depuis été développées : consulter PARTAGE_MODE_EMPLOI.md pour le fonctionnement livré et ses limites. Les sauvegardes automatiques restent à configurer.
 
 ## Architecture proposée
 
