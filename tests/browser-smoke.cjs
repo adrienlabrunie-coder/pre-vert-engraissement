@@ -12,6 +12,10 @@ const {spawn}=require('node:child_process');
   const page=await browser.newPage({viewport:{width:1280,height:900}});
   const failures=[];page.on('pageerror',e=>failures.push(e.message));
   await page.goto(url);
+  await page.screenshot({path:'/tmp/prevert-dashboard-desktop.png',fullPage:true});
+  for(const width of [1440,768,390,320]){await page.setViewportSize({width,height:900});await page.mouse.move(0,0);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`dashboard overflow ${width}`)}
+  await page.screenshot({path:'/tmp/prevert-dashboard-mobile.png',fullPage:true});
+  await page.setViewportSize({width:1280,height:900});
   const legacy={id:'old',date:'2026-01-02',values:{ARC:3,AAV:2,LEGACY:7},custom:'préserver'};
   const animal={id:'test',number:'FR TEST 001',sex:'F',race:'Limousine',birth:'2025-01-01',scores:[legacy],weights:[{date:'2026-01-01',kg:400}],treatments:[{id:'health',date:'2026-01-01',product:'Test'}],custom:'champ existant'};
   await page.evaluate(a=>{localStorage.setItem('pv_animals',JSON.stringify([a]));localStorage.setItem('pv_lots',JSON.stringify([{id:'L1',name:'Lot test'}]))},animal);
@@ -34,11 +38,13 @@ const {spawn}=require('node:child_process');
   await page.getByRole('button',{name:'DPJ : 5 sur 10',exact:true}).click();
   for(const width of [1280,768,375,320]){
    await page.setViewportSize({width,height:900});
-   if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth))console.log(await page.evaluate(()=>[...document.querySelectorAll('body *')].filter(e=>e.getBoundingClientRect().right>innerWidth).map(e=>({tag:e.tagName,cls:e.className,width:e.getBoundingClientRect().width})).slice(0,15)));
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`overflow page ${width}`);
    assert.equal(await page.locator('.dialog').evaluate(e=>e.scrollWidth>e.clientWidth),false,`overflow dialog ${width}`);
    const box=await page.getByRole('button',{name:'DPJ : 5 sur 10',exact:true}).boundingBox();assert.ok(box.height>=44&&box.width>=40);
   }
+  await page.getByText('Voir les illustrations du manuel',{exact:true}).first().click();
+  assert.ok(await page.locator('.full-manual-page').first().isVisible());
+  assert.ok(await page.locator('.full-manual-page').first().evaluate(img=>img.complete&&img.naturalWidth>0));
   await page.screenshot({path:'/tmp/prevert-pointage-mobile.png',fullPage:true});
   await page.getByRole('button',{name:'Vérification',exact:true}).click();
   await page.getByLabel('Observations générales').fill('Pointage partiel de contrôle.');
@@ -49,6 +55,7 @@ const {spawn}=require('node:child_process');
    await page.evaluate(()=>navigator.serviceWorker.ready);
    await page.reload();await page.context().setOffline(true);await page.reload();
    assert.ok(await page.getByRole('button',{name:/FR TEST 001/}).isVisible());
+   const offlineImage=await page.evaluate(async()=>{const response=await fetch('/manual/idele-2014-p63.webp');return response.ok&&(await response.blob()).size>1000});assert.ok(offlineImage,'planche du manuel disponible hors ligne');
    await page.context().setOffline(false);
   }
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('pv_animals')));
@@ -59,6 +66,9 @@ const {spawn}=require('node:child_process');
   assert.deepEqual(saved[0].scores[1].defects.AAV,['avca']);
   await page.setViewportSize({width:1280,height:900});
   await page.getByRole('button',{name:/FR TEST 001/}).click();
+  await page.screenshot({path:'/tmp/prevert-profile-desktop.png',fullPage:true});
+  for(const tab of ['Pesées','Sanitaire','Ration','Suivi']){await page.getByRole('navigation',{name:'Rubriques du bovin'}).getByRole('button',{name:tab,exact:true}).click();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false)}
+  await page.getByRole('navigation',{name:'Rubriques du bovin'}).getByRole('button',{name:'Pointages',exact:true}).click();
   await page.getByText('20/10/2026',{exact:true}).first().click();
   assert.ok(await page.getByText('Profil observé sur sol plat.',{exact:true}).isVisible());
   await page.screenshot({path:'/tmp/prevert-historique-desktop.png',fullPage:true});
