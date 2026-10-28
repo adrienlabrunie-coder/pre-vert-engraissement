@@ -1,0 +1,6 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {calculateWithdrawal} from '../src/health.js';
+const base={lastAdministration:'2026-10-24T10:00:00+02:00',legalDelay:7,unit:'days',applyBio:true,standardUse:true,sourceVerified:true,source:'Ordonnance test'};
+test('Délai standard BIO doublé et échéance calculée en durée réelle',()=>{const r=calculateWithdrawal(base);assert.equal(r.appliedHours,336);assert.equal(r.until,'2026-11-07T08:00:00.000Z')});
+test('Zéro explicite donne 48 h minimum BIO, pas un délai manquant',()=>{assert.equal(calculateWithdrawal({...base,legalDelay:0}).appliedHours,48);assert.throws(()=>calculateWithdrawal({...base,legalDelay:''}));assert.throws(()=>calculateWithdrawal({...base,legalDelay:-1}))});
+test('Sans application BIO, conserver le délai légal vérifié',()=>{assert.equal(calculateWithdrawal({...base,applyBio:false}).appliedHours,168)});
+test('Pas de calcul sans source vérifiée ou hors conditions normales',()=>{assert.throws(()=>calculateWithdrawal({...base,sourceVerified:false}));assert.throws(()=>calculateWithdrawal({...base,standardUse:false}));assert.throws(()=>calculateWithdrawal({...base,source:''}));assert.throws(()=>calculateWithdrawal({...base,lastAdministration:''}))});
