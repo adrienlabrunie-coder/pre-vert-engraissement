@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {readCloudConfig,PROJECT_URL} from '../src/cloud/config.js';
+test('Cloud non configuré : aucun client nécessaire, mode local conservé',()=>{assert.deepEqual(readCloudConfig({}),{configured:false,url:PROJECT_URL})});
+test('Clé publique du projet acceptée, secrets et mauvais projet refusés',()=>{assert.equal(readCloudConfig({VITE_SUPABASE_PUBLISHABLE_KEY:'sb_publishable_test_only'}).configured,true);for(const key of ['sb_secret_test','service_role','eyJhbGciOiJIUzI1NiJ9.payload.signature'])assert.throws(()=>readCloudConfig({VITE_SUPABASE_PUBLISHABLE_KEY:key}),/clé publique/);assert.throws(()=>readCloudConfig({VITE_SUPABASE_URL:'https://other.supabase.co',VITE_SUPABASE_PUBLISHABLE_KEY:'sb_publishable_test_only'}),/ne correspond pas/)});
