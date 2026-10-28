@@ -37,7 +37,7 @@ export function ScoreWizard({animal, onSave, onDirtyChange}) {
   useEffect(()=>{title.current?.focus()},[step]);
   const navigate=next=>{setErrors([]);setStep(next)};
   const field=(label,key,type='text')=><label>{label}<input type={type} value={score[key]} max={type==='date'?localDate():undefined} min={type==='date'?animal.birth:undefined} onChange={e=>update({[key]:e.target.value})}/></label>;
-  const save=()=>{const issues=validateScore(score,animal);if(issues.length){setErrors(issues);return}setSaving(true);try{onSave({...score,id:crypto.randomUUID(),schemaVersion:2,reference:'idele-2014',createdAt:new Date().toISOString(),animalContext:{race:animal.race||'',sex:animal.sex||'',birth:animal.birth||''}});dirty.current=false}catch(e){setErrors([e.message]);setSaving(false)}};
+  const save=async()=>{const issues=validateScore(score,animal);if(issues.length){setErrors(issues);return}setSaving(true);try{await onSave({...score,id:crypto.randomUUID(),schemaVersion:2,reference:'idele-2014',createdAt:new Date().toISOString(),animalContext:{race:animal.race||'',sex:animal.sex||'',birth:animal.birth||''}});dirty.current=false}catch(e){setErrors([e.message]);setSaving(false)}};
   const clear=code=>{const patch={};for(const key of ['values','observations','defects','multipleDefects','movementConfirmed']){patch[key]={...score[key]};delete patch[key][code]}update(patch)};
   return <div className="scoring guided">
     <p className="score-animal"><b>{animal.number}</b> · {animal.race||'Race non renseignée'} · {animal.sex==='F'?'Femelle':'Mâle'} · Naissance : {displayDate(animal.birth)}</p>
