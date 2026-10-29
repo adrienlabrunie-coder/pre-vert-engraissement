@@ -17,7 +17,7 @@ for expected in ["name='"+config['applicationId']+"'","versionCode='"+str(config
 if 'application-debuggable' in badging:raise SystemExit('Refusing a debuggable build.')
 out=root/'distribution/android';out.mkdir(parents=True,exist_ok=True)
 filename='pre-vert-engraissement-'+config['versionName']+'.apk';apk=out/filename
-subprocess.run(['java','-jar',str(build/'apksigner.jar'),'sign','--ks',str(private/'prevert-android-release.p12'),'--ks-key-alias','prevert-release','--ks-pass','file:'+str(private/'signing-password.txt'),'--key-pass','file:'+str(private/'signing-password.txt'),'--out',str(apk),str(build/'app-release-unsigned.apk')],check=True)
+subprocess.run(['java','-jar',str(build/'apksigner.jar'),'sign','--ks',str(private/'prevert-android-release.p12'),'--ks-key-alias','prevert-release','--ks-pass','file:'+str(private/'signing-password.txt'),'--out',str(apk),str(build/'app-release-unsigned.apk')],check=True)
 verification=subprocess.check_output(['java','-jar',str(build/'apksigner.jar'),'verify','--verbose','--print-certs',str(apk)],text=True)
 match=re.search(r'Signer #1 certificate SHA-256 digest: ([a-fA-F0-9]+)',verification)
 if not match or match[1].lower()!=config['signingCertificateSha256']:
