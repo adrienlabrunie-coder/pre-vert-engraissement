@@ -30,6 +30,8 @@ jobs:
           BUILD_TARGET: android
       - run: npx cap add android
       - run: python3 scripts/configure-android.py
+      - run: python3 -m pip install Pillow==12.3.0
+      - run: python3 scripts/configure-native.py android
       - run: npx cap sync android
       - run: chmod +x android/gradlew
       - run: cd android && ./gradlew assembleDebug

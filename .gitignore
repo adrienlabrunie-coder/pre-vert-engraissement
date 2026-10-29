@@ -5,3 +5,12 @@ public/ocr/
 .env
 .env.*
 !.env.example
+
+/android/
+/ios/
+/build-release/
+*.p12
+*.jks
+*.keystore
+
+*.apk.idsig

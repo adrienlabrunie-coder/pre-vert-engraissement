@@ -1,0 +1,16 @@
+def releaseInfo = new groovy.json.JsonSlurper().parse(file('../../app-release.json'))
+android {
+    defaultConfig {
+        versionCode releaseInfo.versionCode as int
+        versionName releaseInfo.versionName
+    }
+    buildTypes {
+        debug {
+            applicationIdSuffix '.debug'
+            versionNameSuffix '-debug'
+        }
+        release {
+            debuggable false
+        }
+    }
+}

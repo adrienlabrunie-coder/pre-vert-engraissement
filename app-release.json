@@ -1,0 +1,7 @@
+{
+  "applicationId": "fr.leprevert.engraissement.mobile",
+  "versionName": "1.0.0",
+  "versionCode": 1000000,
+  "signingCertificateSha256": "d914b259f70020d6b5a86e69c837e0740ea227bb9b94bdffbfa981d4b6ed759a",
+  "updatesUrl": "https://adrienlabrunie-coder.github.io/pre-vert-engraissement/android/latest.json"
+}
