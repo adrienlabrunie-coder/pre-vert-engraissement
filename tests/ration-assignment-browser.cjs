@@ -15,7 +15,7 @@ module.exports=async page=>{
  await page.getByLabel('J’ai vérifié le profil, les poids et l’homogénéité du groupe.').check();
  await page.getByRole('heading',{name:'Plan de distribution et attribution',exact:true}).waitFor();
  assert.ok(await page.locator('.balance-meter').count()>0);
- await page.setViewportSize({width:390,height:900});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'ration calculator fits mobile');await page.getByRole('heading',{name:'Équilibres de la ration',exact:true}).first().scrollIntoViewIfNeeded();await page.screenshot({path:'/tmp/prevert-cloud-ration-balances.png'});await page.setViewportSize({width:1280,height:720});
+ await page.setViewportSize({width:390,height:900});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'ration calculator fits mobile: '+JSON.stringify(await page.evaluate(()=>[...document.querySelectorAll('main *')].filter(e=>e.getBoundingClientRect().right>innerWidth+1).slice(0,15).map(e=>({tag:e.tagName,cls:e.className,width:e.getBoundingClientRect().width,text:e.innerText?.slice(0,50)})))));await page.getByRole('heading',{name:'Équilibres de la ration',exact:true}).first().scrollIntoViewIfNeeded();await page.screenshot({path:'/tmp/prevert-cloud-ration-balances.png'});await page.setViewportSize({width:1280,height:720});
  await page.getByRole('button',{name:'Reprendre les dates d’entrée',exact:true}).click();
  await page.getByLabel('Nom de la ration de base', {exact:true}).fill('Plan engraissement test');
  await page.getByLabel('J’ai validé les quantités, les paliers, les profils des bovins et les dates réelles de début de transition.').check();
