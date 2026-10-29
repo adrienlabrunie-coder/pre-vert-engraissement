@@ -16,6 +16,11 @@ const deadline=setTimeout(()=>{console.error('Deployment browser test timed out'
   await context.grantPermissions(['camera'],{origin:new URL(url).origin});
   const page=await context.newPage();
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  page.on('console',msg=>console.log('Browser:',msg.text()));
+  await page.addInitScript(()=>{
+   const original=navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+   navigator.mediaDevices.getUserMedia=async constraints=>{try{const stream=await original(constraints);console.log('Camera stream opened',stream.getTracks().length);return stream}catch(error){console.log('Camera failure',error.name,error.message);throw error}};
+  });
   console.log('Opening Pages preview');
   await page.goto(url);
   await page.getByRole('heading',{name:'Centre d’engraissement',exact:true}).waitFor();
@@ -25,7 +30,7 @@ const deadline=setTimeout(()=>{console.error('Deployment browser test timed out'
   console.log('Testing camera stream and permission errors');
   await page.getByRole('button',{name:'Scanner passeport',exact:true}).click();
   await page.getByRole('button',{name:'Activer la caméra',exact:true}).click();
-  await page.waitForFunction(()=>document.querySelector('video')?.readyState>=2);
+  await page.waitForFunction(()=>document.querySelector('video')?.readyState>=2).catch(async error=>{console.log('Scanner state:',await page.getByRole('dialog').innerText());throw error});
   await page.evaluate(()=>{window.cameraTracks=document.querySelector('video').srcObject.getTracks()});
   await page.getByRole('button',{name:'Arrêter la caméra',exact:true}).click();
   assert.ok(await page.evaluate(()=>window.cameraTracks.every(t=>t.readyState==='ended')));
