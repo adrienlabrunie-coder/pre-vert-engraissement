@@ -28,7 +28,7 @@ if platform=='android':
 elif platform=='ios':
     path=Path('ios/App/App/Info.plist')
     with path.open('rb') as f:info=plistlib.load(f)
-    info['CFBundleShortVersionString']=release['versionName'];info['CFBundleVersion']=str(release['versionCode'])
+    info['CFBundleShortVersionString']=release['versionName'];info['CFBundleVersion']=release['versionName']
     info['NSCameraUsageDescription']='Scanner les codes-barres des passeports bovins.'
     info['NSPhotoLibraryUsageDescription']='Choisir des photos de passeports pour identifier les bovins.'
     with path.open('wb') as f:plistlib.dump(info,f)
