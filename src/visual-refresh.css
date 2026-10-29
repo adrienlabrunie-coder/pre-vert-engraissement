@@ -50,3 +50,5 @@
 
 /* Keep calculator text and nested grids within narrow phone screens. */
 .ration-planner .hint{display:block}.ration-planner p,.ration-planner label,.ration-planner summary{overflow-wrap:anywhere}.ration-planner .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ration-diagnostics,.ration-assignment{min-width:0;max-width:100%}@media(max-width:500px){.ration-planner .form-grid{grid-template-columns:minmax(0,1fr)}.ration-planner>.form{padding:12px 0}}
+
+.daily-rations .table-wrap{min-width:0;max-width:100%;overflow-x:auto}.daily-rations table{width:100%;text-align:left;border-collapse:collapse}.daily-rations td,.daily-rations th{padding:10px;min-width:100px}.daily-rations>label{display:grid;gap:6px;margin:16px 0;font-size:13px}.daily-rations input{max-width:100%;width:180px;padding:10px;border:1px solid #cbdbe3;border-radius:8px}.daily-rations .hint{display:block;overflow-wrap:anywhere}
