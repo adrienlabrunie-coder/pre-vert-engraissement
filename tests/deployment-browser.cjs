@@ -23,6 +23,7 @@ const deadline=setTimeout(()=>{console.error('Deployment browser test timed out'
   assert.equal(manifest.start_url,base);
   console.log('Waiting for offline cache');
   await page.evaluate(()=>navigator.serviceWorker.ready);
+  await page.evaluate(()=>localStorage.setItem('pv_animals',JSON.stringify([{id:'deployment-test',number:'FR TEST 001',sex:'F',race:'Limousine',birth:'2025-01-01',scores:[],weights:[],treatments:[]}])));
   await page.reload();
   await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
   console.log('Testing offline navigation');
