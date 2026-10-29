@@ -29,9 +29,14 @@ jobs:
         env:
           BUILD_TARGET: android
       - run: npx cap add android
+      - run: python3 scripts/configure-android.py
       - run: npx cap sync android
       - run: chmod +x android/gradlew
       - run: cd android && ./gradlew assembleDebug
+      - name: Verify camera permission in compiled APK
+        run: |
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump permissions android/app/build/outputs/apk/debug/app-debug.apk | tee /tmp/apk-permissions.txt
+          grep -q "android.permission.CAMERA" /tmp/apk-permissions.txt
       - uses: actions/upload-artifact@v4
         with:
           name: pre-vert-debug-apk

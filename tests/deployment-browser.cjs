@@ -11,8 +11,9 @@ const deadline=setTimeout(()=>{console.error('Deployment browser test timed out'
   let ready=false;
   for(let i=0;i<100;i++){try{if((await fetch(url)).ok){ready=true;break}}catch{}await new Promise(r=>setTimeout(r,100))}
   assert.ok(ready,'Preview server started');
-  browser=await chromium.launch();
+  browser=await chromium.launch({args:['--use-fake-device-for-media-stream']});
   const context=await browser.newContext();
+  await context.grantPermissions(['camera'],{origin:new URL(url).origin});
   const page=await context.newPage();
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   console.log('Opening Pages preview');
@@ -21,6 +22,27 @@ const deadline=setTimeout(()=>{console.error('Deployment browser test timed out'
   await page.locator('.brand img').evaluate(img=>img.decode());
   const manifest=await (await context.request.get(url+'manifest.webmanifest')).json();
   assert.equal(manifest.start_url,base);
+  console.log('Testing camera stream and permission errors');
+  await page.getByRole('button',{name:'Scanner passeport',exact:true}).click();
+  await page.getByRole('button',{name:'Activer la caméra',exact:true}).click();
+  await page.waitForFunction(()=>document.querySelector('video')?.readyState>=2);
+  await page.evaluate(()=>{window.cameraTracks=document.querySelector('video').srcObject.getTracks()});
+  await page.getByRole('button',{name:'Arrêter la caméra',exact:true}).click();
+  assert.ok(await page.evaluate(()=>window.cameraTracks.every(t=>t.readyState==='ended')));
+  await page.evaluate(()=>{
+   window.originalGetUserMedia=navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+   navigator.mediaDevices.getUserMedia=()=>Promise.reject(new DOMException('Denied in test','NotAllowedError'));
+  });
+  await page.getByRole('button',{name:'Activer la caméra',exact:true}).click();
+  await page.getByRole('alert').filter({hasText:'permissions de ce site'}).waitFor();
+  assert.ok(await page.getByRole('button',{name:'Activer la caméra',exact:true}).isEnabled());
+  await page.evaluate(()=>{navigator.mediaDevices.getUserMedia=window.originalGetUserMedia});
+  await page.getByRole('button',{name:'Activer la caméra',exact:true}).click();
+  await page.waitForFunction(()=>document.querySelector('video')?.srcObject?.active);
+  await page.evaluate(()=>{window.cameraTracks=document.querySelector('video').srcObject.getTracks()});
+  await page.getByRole('button',{name:'Fermer',exact:true}).click();
+  assert.ok(await page.evaluate(()=>window.cameraTracks.every(t=>t.readyState==='ended')));
+  console.log('PASS camera stream, stop, permission error, retry and release on close.');
   console.log('Waiting for offline cache');
   await page.evaluate(()=>navigator.serviceWorker.ready);
   await page.evaluate(()=>localStorage.setItem('pv_animals',JSON.stringify([{id:'deployment-test',number:'FR TEST 001',sex:'F',race:'Limousine',birth:'2025-01-01',scores:[],weights:[],treatments:[]}])));
