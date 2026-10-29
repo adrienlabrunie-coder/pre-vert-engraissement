@@ -1,8 +1,11 @@
 {
   "appId": "fr.leprevert.engraissement.mobile",
-  "appName": "Pr\u00e9 Vert Engraissement",
+  "appName": "Pré Vert Engraissement",
   "webDir": "dist",
   "server": {
     "androidScheme": "https"
+  },
+  "android": {
+    "adjustMarginsForEdgeToEdge": "auto"
   }
 }

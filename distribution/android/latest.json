@@ -1,9 +1,9 @@
 {
   "applicationId": "fr.leprevert.engraissement.mobile",
-  "versionName": "1.0.1",
-  "versionCode": 1000001,
+  "versionName": "1.0.2",
+  "versionCode": 1000002,
   "signingCertificateSha256": "d914b259f70020d6b5a86e69c837e0740ea227bb9b94bdffbfa981d4b6ed759a",
-  "downloadUrl": "https://adrienlabrunie-coder.github.io/pre-vert-engraissement/android/pre-vert-engraissement-1.0.1.apk",
-  "sha256": "b97d4be8aed6ce87c60b44b9e974bea5b0c7eb7d61c9e8f663ecf485495821e9",
-  "publishedAt": "2026-10-29T13:49:50.567592+00:00"
+  "downloadUrl": "https://adrienlabrunie-coder.github.io/pre-vert-engraissement/android/pre-vert-engraissement-1.0.2.apk",
+  "sha256": "51a0a8bca1b519aaf7057f0982e9324cb3d2f7714951e79ab988f9159e31af51",
+  "publishedAt": "2026-10-29T15:13:41.525608+00:00"
 }
