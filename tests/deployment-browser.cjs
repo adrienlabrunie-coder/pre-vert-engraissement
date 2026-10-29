@@ -81,6 +81,7 @@ const deadline=setTimeout(()=>{console.error('Deployment browser test timed out'
   assert.ok(!(await page.locator('main').innerText()).includes(lotId));
   await page.setViewportSize({width:1280,height:720});
   console.log('PASS lot names displayed instead of internal UUIDs, including on mobile.');
+  await require('./ration-assignment-browser.cjs')(page);
   console.log('Waiting for offline cache');
   await page.evaluate(()=>navigator.serviceWorker.ready);
   await page.evaluate(()=>localStorage.setItem('pv_animals',JSON.stringify([{id:'deployment-test',number:'FR TEST 001',sex:'F',race:'Limousine',birth:'2025-01-01',scores:[],weights:[],treatments:[]}])));

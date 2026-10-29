@@ -1,0 +1,11 @@
+# Rations et distribution individuelle
+
+Le moteur existant reste un modèle simplifié et non une implémentation certifiée de l’intégralité du système INRAE. L’interface expose les indicateurs, contributions par aliment, interactions, corrections, prix et analyses personnalisées. Les catégories couvertes restent vache, génisse et bœuf castré ; les mâles entiers ne sont pas calculés.
+
+Une ration calculée peut rester un instantané de base ou être validée puis affectée à une sélection de bovins. Chaque bovin reçoit une copie figée, avec son propre identifiant de ration et sa date de début de transition. Les futures modifications de catalogue et de lot ne réécrivent pas son historique.
+
+Les paliers proposés interpolent les quantités initiales réellement renseignées vers la ration cible. Les valeurs initiales proposées (fourrages à la quantité cible, concentrés à zéro) doivent être vérifiées. Le réglage initial de 28 jours et 7 jours entre paliers est un paramètre de simulation, pas une recommandation universelle INRAE. Chaque palier présente ses équilibres. Les blocages du moteur empêchent l’attribution. Un changement de ration repart par défaut à la date du jour ; la date d’entrée peut être reprise uniquement après vérification de l’alimentation antérieure. La seule ancienneté au centre ne démontre pas l’adaptation digestive.
+
+L’onglet Ration de la fiche bovin expose le palier à une date donnée, les quantités brutes et MS, le prochain palier et l’historique. La page Rations affiche la distribution individuelle et les totaux pour les bovins ayant un plan actif. Ce sont des quantités prévues, pas un enregistrement de distribution effectuée.
+
+Références contextuelles consultées : ARVALIS, « Finition des vaches de réforme du troupeau allaitant : les clés de réussite » (13 mars 2024), https://www.arvalis.fr/infos-techniques/finition-des-vaches-de-reforme-du-troupeau-allaitant-les-cles-de-reussite ; ARVALIS, « Déficit fourrager : comment adapter les rations hivernales pour les ruminants », https://www.arvalis.fr/infos-techniques/deficit-fourrager-comment-adapter-les-rations-hivernales-pour-les-ruminants. Les rythmes de transition spécifiques aux broutards de ces références ne sont pas appliqués automatiquement à toutes les catégories.
