@@ -1,5 +1,7 @@
 name: Deploy PWA to GitHub Pages
 on:
+  pull_request:
+    branches: [main]
   push:
     branches: [main]
   workflow_dispatch:
@@ -20,6 +22,7 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
+      - run: npm test
       - run: npm run build
         env:
           VITE_BASE_PATH: /pre-vert-engraissement/
@@ -27,6 +30,7 @@ jobs:
         with:
           path: dist
   deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
