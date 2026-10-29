@@ -50,6 +50,7 @@ module.exports=async function(page){
  await page.reload();
  await page.getByRole('button',{name:/FR 1234567890/}).first().click();
  await page.getByRole('img',{name:'Comparaison du poids réel et du poids prévisionnel'}).waitFor();
+ await page.locator('.recharts-line-curve').waitFor({state:'visible'}).catch(async error=>{console.log('Profile state:',await page.locator('.content').innerText());throw error});
  assert.equal(await page.locator('.recharts-line-curve').count(),1);
  await page.getByRole('button',{name:'Enregistrer une pesée',exact:true}).click();
  await page.getByLabel('Date de pesée').fill('2026-10-21');
