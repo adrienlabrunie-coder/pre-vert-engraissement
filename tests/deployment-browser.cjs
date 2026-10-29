@@ -1,6 +1,7 @@
 const {chromium}=require('playwright');
 const {spawn}=require('node:child_process');
 const assert=require('node:assert/strict');
+const deadline=setTimeout(()=>{console.error('Deployment browser test timed out');process.exit(1)},90000);
 (async()=>{
  const base='/pre-vert-engraissement/';
  const url='http://127.0.0.1:5188'+base;
@@ -14,14 +15,17 @@ const assert=require('node:assert/strict');
   const context=await browser.newContext();
   const page=await context.newPage();
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  console.log('Opening Pages preview');
   await page.goto(url);
   await page.getByRole('heading',{name:'Centre d’engraissement',exact:true}).waitFor();
   await page.locator('.brand img').evaluate(img=>img.decode());
   const manifest=await (await context.request.get(url+'manifest.webmanifest')).json();
   assert.equal(manifest.start_url,base);
+  console.log('Waiting for offline cache');
   await page.evaluate(()=>navigator.serviceWorker.ready);
   await page.reload();
   await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
+  console.log('Testing offline navigation');
   await context.setOffline(true);
   await page.reload();
   await page.getByRole('heading',{name:'Centre d’engraissement',exact:true}).waitFor();
@@ -38,5 +42,5 @@ const assert=require('node:assert/strict');
   assert.ok(loaded,'Medicine records cached offline');
   assert.deepEqual(errors,[]);
   console.log('PASS Pages subpath: dashboard, manifest, scoring images, medicine records and offline reload.');
- }finally{await browser?.close();server.kill()}
+ }finally{clearTimeout(deadline);await browser?.close();server.kill()}
 })().catch(e=>{console.error(e);process.exitCode=1});
