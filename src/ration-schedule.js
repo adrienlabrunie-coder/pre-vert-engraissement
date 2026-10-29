@@ -9,7 +9,7 @@ export function buildStages(lines,initial,duration=28,interval=7){
  return offsets.map((offset,i)=>({day:offset+1,name:i===offsets.length-1?'Ration de croisière':`Palier ${i+1}`,lines:lines.map(l=>({feedId:l.feedId,kgMS:Math.round((Number(initial[l.feedId])+(Number(l.kgMS)-Number(initial[l.feedId]))*offset/duration)*1000)/1000}))}));
 }
 export function rationAt(animal,at){
- const candidates=(animal.rations||[]).filter(r=>r.distribution?.validatedAt&&daysSince(r.distribution.startDate,at)>=0).sort((a,b)=>a.distribution.startDate.localeCompare(b.distribution.startDate)||(a.createdAt||'').localeCompare(b.createdAt||''));
+ const candidates=(animal.rations||[]).filter(r=>r.distribution?.validatedAt&&Array.isArray(r.distribution.stages)&&r.distribution.stages.length&&daysSince(r.distribution.startDate,at)!==null&&daysSince(r.distribution.startDate,at)>=0).sort((a,b)=>a.distribution.startDate.localeCompare(b.distribution.startDate)||(a.createdAt||'').localeCompare(b.createdAt||''));
  const ration=candidates.at(-1);if(!ration)return null;
  const elapsed=daysSince(ration.distribution.startDate,at),stages=ration.distribution.stages;
  const stage=[...stages].reverse().find(s=>s.day<=elapsed+1);const next=stages.find(s=>s.day>elapsed+1);

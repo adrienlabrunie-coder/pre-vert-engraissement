@@ -9,12 +9,13 @@ module.exports=async page=>{
  const seed={animals:[{id:'older',number:'FR OLD 60',sex:'F',birth:'2021-01-01',entryDate:before(60),entryWeight:600,lot:'ration-lot',weights:[],scores:[],treatments:[],rations:[]},{id:'recent',number:'FR NEW 2',sex:'F',birth:'2021-01-01',entryDate:before(2),entryWeight:600,lot:'ration-lot',weights:[],scores:[],treatments:[],rations:[]}],lots:[{id:'ration-lot',name:'Lot ration',rations:[{id:'base',date:today,profile,lines,feeds,diagnostic:{},notes:'Base de test'}]}]};
  await page.evaluate(seed=>{localStorage.setItem('pv_animals',JSON.stringify(seed.animals));localStorage.setItem('pv_lots',JSON.stringify(seed.lots))},seed);await page.reload();
  await page.locator('.sidebar').getByRole('button',{name:'Rations',exact:true}).click();
- await page.getByLabel('Bovin ou lot',{exact:true}).selectOption('lot:ration-lot');
+ await page.getByLabel('Bovin ou lot').selectOption('lot:ration-lot');
  await page.getByText('Instantané conservé, indépendant des futurs changements de lot ou de catalogue.').evaluate(el=>el.closest('details').open=true);
  await page.getByRole('button',{name:'Utiliser comme base',exact:true}).click();
  await page.getByLabel('J’ai vérifié le profil, les poids et l’homogénéité du groupe.').check();
  await page.getByRole('heading',{name:'Plan de distribution et attribution',exact:true}).waitFor();
  assert.ok(await page.locator('.balance-meter').count()>0);
+ await page.setViewportSize({width:390,height:900});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'ration calculator fits mobile');await page.getByRole('heading',{name:'Équilibres de la ration',exact:true}).first().scrollIntoViewIfNeeded();await page.screenshot({path:'/tmp/prevert-cloud-ration-balances.png'});await page.setViewportSize({width:1280,height:720});
  await page.getByRole('button',{name:'Reprendre les dates d’entrée',exact:true}).click();
  await page.getByLabel('Nom de la ration de base', {exact:true}).fill('Plan engraissement test');
  await page.getByLabel('J’ai validé les quantités, les paliers, les profils des bovins et les dates réelles de début de transition.').check();

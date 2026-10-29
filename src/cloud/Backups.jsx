@@ -29,7 +29,7 @@ export default function Backups({client,workspace,onClose}){
  const status=workspace.getStatus();const unsynced=status.pending||Object.keys(status.conflicts).length;
  const lastBackup=listing?.backups.find(b=>b.reason==='hourly'||b.reason==='initial')?.created_at;
  const archiveStale=!lastBackup||Date.now()-Date.parse(lastBackup)>2*3600000;
- return <div className="modal-backdrop team-admin-backdrop"><section className="dialog wide" role="dialog" aria-modal="true" aria-label="Sauvegardes et restauration"><div className="dialog-head"><h2>Sauvegardes et restauration</h2><button aria-label="Fermer" disabled={busy} onClick={onClose}>×</button></div><div className="form">
+ return <div className="modal-backdrop team-admin-backdrop"><section className="dialog wide backup-dialog" role="dialog" aria-modal="true" aria-label="Sauvegardes et restauration"><div className="dialog-head"><h2>Sauvegardes et restauration</h2><button aria-label="Fermer" disabled={busy} onClick={onClose}>×</button></div><div className="form">
  <p>Les données synchronisées sont sauvegardées automatiquement toutes les heures, même lorsque l’application est fermée. Historique : 30 jours. Les copies avant modification sont également conservées 30 jours.</p>
  <p>Dernière sauvegarde automatique : <b>{date(lastBackup)}</b>.</p>
  {listing&&archiveStale&&<p role="alert" className="warning">La sauvegarde automatique est absente ou date de plus de deux heures. Vérifiez le service de sauvegarde avant de compter sur cette protection.</p>}
