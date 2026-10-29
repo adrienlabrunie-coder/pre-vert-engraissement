@@ -1,7 +1,7 @@
 const {chromium}=require('playwright');
 const {spawn}=require('node:child_process');
 const assert=require('node:assert/strict');
-const deadline=setTimeout(()=>{console.error('Deployment browser test timed out');process.exit(1)},90000);
+const deadline=setTimeout(()=>{console.error('Deployment browser test timed out');process.exit(1)},180000);
 (async()=>{
  const base='/pre-vert-engraissement/';
  const url='http://127.0.0.1:5188'+base;
@@ -26,7 +26,8 @@ const deadline=setTimeout(()=>{console.error('Deployment browser test timed out'
     const stream=canvas.captureStream(10);
     const timer=setInterval(()=>{
      if(!stream.active){clearInterval(timer);return}
-     ctx.fillRect(0,0,640,480);
+     ctx.fillStyle='white';ctx.fillRect(0,0,640,480);
+     const matrix=window.testCameraMatrix;if(matrix){ctx.fillStyle='black';const unit=Math.floor(400/matrix.length);for(let y=0;y<matrix.length;y++)for(let x=0;x<matrix.length;x++)if(matrix[y][x])ctx.fillRect(100+x*unit,20+y*unit,unit,unit);}
     },100);
     return stream;
    };
@@ -58,6 +59,7 @@ const deadline=setTimeout(()=>{console.error('Deployment browser test timed out'
   await page.getByRole('button',{name:'Fermer',exact:true}).click();
   assert.ok(await page.evaluate(()=>window.cameraTracks.every(t=>t.readyState==='ended')));
   console.log('PASS camera stream, stop, permission error, retry and release on close.');
+  await require('./batch-forecast-browser.cjs')(page);
   console.log('Waiting for offline cache');
   await page.evaluate(()=>navigator.serviceWorker.ready);
   await page.evaluate(()=>localStorage.setItem('pv_animals',JSON.stringify([{id:'deployment-test',number:'FR TEST 001',sex:'F',race:'Limousine',birth:'2025-01-01',scores:[],weights:[],treatments:[]}])));
