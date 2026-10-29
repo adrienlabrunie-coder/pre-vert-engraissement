@@ -11,15 +11,25 @@ const deadline=setTimeout(()=>{console.error('Deployment browser test timed out'
   let ready=false;
   for(let i=0;i<100;i++){try{if((await fetch(url)).ok){ready=true;break}}catch{}await new Promise(r=>setTimeout(r,100))}
   assert.ok(ready,'Preview server started');
-  browser=await chromium.launch({args:['--use-fake-device-for-media-stream']});
+  browser=await chromium.launch();
   const context=await browser.newContext();
-  await context.grantPermissions(['camera'],{origin:new URL(url).origin});
   const page=await context.newPage();
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   page.on('console',msg=>console.log('Browser:',msg.text()));
+  // Exercise the scanner with a real MediaStream generated from a canvas.
+  // CI has no physical camera: Android permission is checked separately in the APK.
   await page.addInitScript(()=>{
-   const original=navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
-   navigator.mediaDevices.getUserMedia=async constraints=>{try{const stream=await original(constraints);console.log('Camera stream opened',stream.getTracks().length);return stream}catch(error){console.log('Camera failure',error.name,error.message);throw error}};
+   navigator.mediaDevices.getUserMedia=async constraints=>{
+    if(constraints.audio)throw Error('Scanner must not request microphone access');
+    const canvas=document.createElement('canvas');canvas.width=640;canvas.height=480;
+    const ctx=canvas.getContext('2d');ctx.fillStyle='white';ctx.fillRect(0,0,640,480);
+    const stream=canvas.captureStream(10);
+    const timer=setInterval(()=>{
+     if(!stream.active){clearInterval(timer);return}
+     ctx.fillRect(0,0,640,480);
+    },100);
+    return stream;
+   };
   });
   console.log('Opening Pages preview');
   await page.goto(url);
