@@ -28,6 +28,9 @@ jobs:
           VITE_BASE_PATH: /pre-vert-engraissement/
       - run: npx playwright install --with-deps chromium
       - run: node tests/deployment-browser.cjs
+      - run: node tests/cloud-browser.cjs
+        env:
+          VITE_BASE_PATH: /pre-vert-engraissement/
       - name: Include signed Android distribution
         run: if [ -d distribution/android ]; then cp -R distribution/android dist/android; fi
       - uses: actions/upload-pages-artifact@v3
