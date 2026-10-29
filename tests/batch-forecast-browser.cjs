@@ -16,7 +16,7 @@ module.exports=async function(page){
  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('pv_animals')).length),initial);
  await page.getByRole('button',{name:'Arrêter la caméra',exact:true}).click();
  await page.evaluate(()=>{window.testCameraMatrix=null});
- assert.equal(await page.getByLabel('Sexe du bovin 1',{exact:true}).inputValue(),'F');
+ assert.equal(await page.getByLabel('Sexe du bovin 1').inputValue(),'F');
  assert.equal(await page.getByLabel('Naissance du bovin 2',{exact:true}).inputValue(),'2025-05-12');
  await page.getByRole('button',{name:'Retirer le bovin 2',exact:true}).click();
  const images=[];
