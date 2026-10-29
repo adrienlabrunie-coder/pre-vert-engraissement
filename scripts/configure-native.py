@@ -6,7 +6,7 @@ from PIL import Image
 platform=sys.argv[1]
 release=json.loads(Path('app-release.json').read_text())
 assert isinstance(release['versionCode'],int) and 0<release['versionCode']<2100000000
-icon=Image.open('public/icon-512.png').convert('RGBA')
+icon=Image.open('public/logo.png').convert('RGBA')
 def save_icon(path,size,padding=0,transparent=False):
     canvas=Image.new('RGBA',(size,size),(0,0,0,0) if transparent else (255,255,255,255))
     inner=round(size*(1-padding*2));im=icon.copy();im.thumbnail((inner,inner),Image.Resampling.LANCZOS)
