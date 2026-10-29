@@ -1,0 +1,31 @@
+name: iOS unsigned build
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  ios:
+    runs-on: macos-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+        env:
+          BUILD_TARGET: ios
+          VITE_NATIVE_RELEASE: 'true'
+      - run: npx cap add ios
+      - run: python3 -m venv /tmp/prevert-icons && /tmp/prevert-icons/bin/pip install Pillow==12.3.0
+      - run: /tmp/prevert-icons/bin/python scripts/configure-native.py ios
+      - run: npx cap sync ios
+      - name: Compile iOS without a distribution identity
+        run: xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -archivePath build/PreVert.xcarchive CODE_SIGNING_ALLOWED=NO archive
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pre-vert-ios-UNSIGNED-not-installable
+          path: build/PreVert.xcarchive

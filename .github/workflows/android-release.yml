@@ -1,0 +1,51 @@
+name: Android Release preparation
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+  push:
+    branches: [main]
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-35 build-tools;35.0.0
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+        env:
+          BUILD_TARGET: android
+          VITE_NATIVE_RELEASE: 'true'
+      - run: npx cap add android
+      - run: python3 scripts/configure-android.py
+      - run: python3 -m pip install Pillow==12.3.0
+      - run: python3 scripts/configure-native.py android
+      - run: npx cap sync android
+      - run: cd android && chmod +x gradlew && ./gradlew assembleRelease
+      - name: Prepare unsigned release for private signing
+        run: |
+          mkdir -p build-release
+          cp android/app/build/outputs/apk/release/app-release-unsigned.apk build-release/
+          cp "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar" build-release/
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c 4 build-release/app-release-unsigned.apk
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging build-release/app-release-unsigned.apk > build-release/apk-badging.txt
+          grep -q "fr.leprevert.engraissement.mobile" build-release/apk-badging.txt
+          if grep -q 'application-debuggable' build-release/apk-badging.txt; then exit 1; fi
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump permissions build-release/app-release-unsigned.apk | grep 'android.permission.CAMERA'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pre-vert-release-UNSIGNED-do-not-install
+          path: build-release/
