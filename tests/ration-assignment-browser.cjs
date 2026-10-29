@@ -1,0 +1,32 @@
+const assert=require('node:assert/strict');
+module.exports=async page=>{
+ const {build}=require('esbuild');
+ const built=await build({stdin:{contents:"export {FEEDS,estConcentre} from './src/ration-engine/feeds';export {equilibrer} from './src/ration-engine/balance';export {diagnostiquer} from './src/ration-engine/ration';",resolveDir:process.cwd()},bundle:true,write:false,format:'esm',platform:'node'});
+ const {FEEDS,equilibrer}=await import('data:text/javascript;base64,'+Buffer.from(built.outputFiles[0].text).toString('base64'));
+ const today=new Date().toISOString().slice(0,10);const before=d=>new Date(Date.parse(today+'T00:00:00Z')-d*86400000).toISOString().slice(0,10);
+ const profile={categorie:'vache',raceId:'limousine',effectif:2,poidsDepart:600,poidsVente:700,ageMois:60,etat:2,gmq:1000,duree:100,paturage:false};
+ const lines=equilibrer({lot:profile,pv:600,feeds:FEEDS},FEEDS),feeds=FEEDS.filter(f=>lines.some(l=>l.feedId===f.id));
+ const seed={animals:[{id:'older',number:'FR OLD 60',sex:'F',birth:'2021-01-01',entryDate:before(60),entryWeight:600,lot:'ration-lot',weights:[],scores:[],treatments:[],rations:[]},{id:'recent',number:'FR NEW 2',sex:'F',birth:'2021-01-01',entryDate:before(2),entryWeight:600,lot:'ration-lot',weights:[],scores:[],treatments:[],rations:[]}],lots:[{id:'ration-lot',name:'Lot ration',rations:[{id:'base',date:today,profile,lines,feeds,diagnostic:{},notes:'Base de test'}]}]};
+ await page.evaluate(seed=>{localStorage.setItem('pv_animals',JSON.stringify(seed.animals));localStorage.setItem('pv_lots',JSON.stringify(seed.lots))},seed);await page.reload();
+ await page.locator('.sidebar').getByRole('button',{name:'Rations',exact:true}).click();
+ await page.getByLabel('Bovin ou lot').selectOption('lot:ration-lot');
+ await page.getByText('Instantané conservé, indépendant des futurs changements de lot ou de catalogue.').evaluate(el=>el.closest('details').open=true);
+ await page.getByRole('button',{name:'Utiliser comme base',exact:true}).click();
+ await page.getByLabel('J’ai vérifié le profil, les poids et l’homogénéité du groupe.').check();
+ await page.getByRole('heading',{name:'Plan de distribution et attribution',exact:true}).waitFor();
+ assert.ok(await page.locator('.balance-meter').count()>0);
+ await page.setViewportSize({width:390,height:900});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'ration calculator fits mobile: '+JSON.stringify(await page.evaluate(()=>[...document.querySelectorAll('main *')].filter(e=>e.getBoundingClientRect().right>innerWidth+1).slice(0,15).map(e=>({tag:e.tagName,cls:e.className,width:e.getBoundingClientRect().width,text:e.innerText?.slice(0,50)})))));await page.getByRole('heading',{name:'Équilibres de la ration',exact:true}).first().scrollIntoViewIfNeeded();await page.screenshot({path:'/tmp/prevert-cloud-ration-balances.png'});await page.setViewportSize({width:1280,height:720});
+ await page.getByRole('button',{name:'Reprendre les dates d’entrée',exact:true}).click();
+ await page.getByLabel('Nom de la ration de base', {exact:true}).fill('Plan engraissement test');
+ await page.getByLabel('J’ai validé les quantités, les paliers, les profils des bovins et les dates réelles de début de transition.').check();
+ const apply=page.getByRole('button',{name:'Valider et attribuer à 2 bovin(s)',exact:true});
+ assert.ok(await apply.isEnabled(),'valid progressive plan can be assigned');await apply.click();
+ await page.getByText('Ration attribuée à 2 bovin(s).',{exact:false}).waitFor();
+ const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('pv_animals')));assert.equal(stored[0].rations.length,1);assert.equal(stored[1].rations.length,1);assert.notEqual(stored[0].rations[0].id,stored[1].rations[0].id);
+ await page.getByRole('button',{name:'FR OLD 60',exact:true}).click();await page.getByRole('navigation',{name:'Rubriques du bovin'}).getByRole('button',{name:'Ration',exact:true}).click();
+ await page.getByText('Ration de croisière atteinte.',{exact:true}).waitFor();
+ for(const width of [1280,390]){await page.setViewportSize({width,height:900});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);}
+ await page.screenshot({path:'/tmp/prevert-cloud-ration.png',fullPage:true});await page.setViewportSize({width:1280,height:720});
+ await page.locator('.sidebar').getByRole('button',{name:'Rations',exact:true}).click();await page.getByRole('button',{name:'FR NEW 2',exact:true}).click();await page.getByRole('navigation',{name:'Rubriques du bovin'}).getByRole('button',{name:'Ration',exact:true}).click();await page.getByText('Prochain palier :',{exact:false}).waitFor();
+ console.log('PASS ration: full balances, two-animal assignment, frozen history, 60/2-day individual stages and mobile consultation.');
+};

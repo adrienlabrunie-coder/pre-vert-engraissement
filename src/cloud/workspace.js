@@ -16,7 +16,15 @@ export async function cloudWorkspace(client,user,farm){
  const rpc=async op=>{const r=await client.rpc('pv_apply_operation',{p_farm:farm.id,p_operation:op.operationId,p_kind:op.record.kind,p_id:op.record.id,p_expected:op.expected,p_payload:op.record.payload,p_deleted:op.record.deleted,p_subject_kind:op.record.subject_kind,p_subject_id:op.record.subject_id});if(r.error){const error=new Error(r.error.message);error.code=r.error.code;throw error;}return r.data};
  const store={mode:'cloud',user,farm,getSnapshot:()=>snapshot,subscribe:fn=>{listeners.add(fn);return()=>listeners.delete(fn)},getStatus:()=>({pending:pendingRecords(state).length+(state.inflight&&!pendingRecords(state).some(r=>recordKey(r)===recordKey(state.inflight.record))?1:0),conflicts:state.conflicts,lastSync:state.lastSync}),
  update:(field,value)=>serial(async()=>{if(!['admin','editor'].includes(farm.role))throw new Error('Ce compte dispose uniquement d’un accès en lecture.');const next=typeof value==='function'?value(snapshot[field]):value;await persist(editReplica(state,{...snapshot,[field]:next}))}),
- replace:data=>serial(async()=>{if(!['admin','editor'].includes(farm.role))throw new Error('Accès en lecture seule.');if(Object.keys(state.desired).length)throw new Error('L’import est réservé à une base partagée vide pour éviter de remplacer les données de l’équipe.');await persist(editReplica(state,data))}),
+ replace:data=>serial(async()=>{if(farm.role!=='admin')throw new Error('Accès en lecture seule.');if(Object.keys(state.desired).length)throw new Error('L’import est réservé à une base partagée vide pour éviter de remplacer les données de l’équipe.');await persist(editReplica(state,data))}),
+ restoreBackup:params=>serial(async()=>{
+  if(!navigator.onLine)throw new Error('Une connexion Internet est nécessaire.');
+  farm.role=await check();if(farm.role!=='admin')throw new Error('Restauration réservée aux administrateurs.');
+  if(pendingRecords(state).length||state.inflight||Object.keys(state.conflicts).length)throw new Error('Synchronisez les saisies et résolvez les conflits avant de restaurer.');
+  const {data,error}=await client.rpc('pv_backup_admin',{p_farm:farm.id,p_action:'restore',...params});if(error)throw error;
+  await persist({...mergeRemote({...emptyReplica(),revision:state.revision},data.records),lastSync:new Date().toISOString()});
+  return data;
+ }),
  resolve:(key,choice)=>serial(async()=>{if(!['admin','editor'].includes(farm.role))throw new Error('Accès en lecture seule.');await persist(resolveReplica(state,key,choice))}),
  sync:()=>serial(async()=>{
   farm.role=await check();

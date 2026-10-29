@@ -14,3 +14,5 @@ public/ocr/
 *.keystore
 
 *.apk.idsig
+
+supabase/.temp/

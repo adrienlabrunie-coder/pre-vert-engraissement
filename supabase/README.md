@@ -43,3 +43,14 @@ Dans l’application, l’administrateur ouvre **Compte → Gérer les utilisate
 Les fonctions vérifient le rôle administrateur à chaque appel, ne montrent que les membres de l’élevage demandé, interdisent l’auto-modification et sérialisent les modifications d’accès par élevage. Un compte déjà rattaché à un autre élevage est refusé, car l’écran de connexion actuel ne gère qu’un élevage par compte. Une copie locale déjà présente ne peut pas être effacée à distance ; les droits retirés sont appliqués lors des prochains échanges avec le serveur.
 
 Validation : `node --test tests/team-admin.test.js` vérifie les droits dans PostgreSQL embarqué.
+
+
+## Sauvegardes applicatives (1.0.5)
+
+Les migrations `20261029165024_automatic_backups.sql` et `20261029165224_backup_scheduler.sql` ajoutent des instantanés complets des `pv_records` dans un schéma privé et une tâche PostgreSQL horaire (à la minute 0). La rétention est de 30 jours. Les modifications et suppressions conservent également l’état précédent dans la même transaction ; les restaurations conservent un point de retour. Toutes les copies restent **dans la même base** : cela couvre les mauvaises manipulations applicatives, pas la disparition de la base ou du projet. La copie automatique vers un stockage séparé n’est pas activée.
+
+L’administrateur ouvre Compte → Sauvegardes et restauration. Il peut télécharger un JSON portable, restaurer une date ou importer un ancien export `{animals,lots}`. L’import est réservé à cette interface et au RPC contrôlé côté serveur. Il faut être en ligne, sans saisie locale en attente ni conflit. La restauration nécessite le mot RESTAURER et refuse une base modifiée depuis l’aperçu. Les versions augmentent et les tombstones sont conservés pour que les autres appareils détectent les conflits. Les comptes Auth et les rôles ne sont pas modifiés.
+
+Les sauvegardes couvrent les animaux, lots, pesées, pointages, traitements et rations synchronisés, ainsi que les champs JSON associés. Aucun fichier externe hors de ces enregistrements n’est copié. Les saisies locales hors ligne ne sont protégées côté serveur qu’après synchronisation. Contrôler `cron.job_run_details` et l’âge de la dernière copie ; l’écran administrateur signale un retard de plus de deux heures. Conserver un export téléchargé hors de Supabase pour couvrir la perte du projet.
+
+Test de restauration automatisé : `node --test tests/backups.test.js`. Il vérifie les droits, l’intégrité, l’import atomique, le point de retour, les conflits des anciens clients et l’idempotence.
