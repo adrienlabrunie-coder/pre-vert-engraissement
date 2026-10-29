@@ -16,6 +16,6 @@ test('team administration: server authorization, default standard user, isolatio
  await login(a);await change(u,'viewer');await login(u);await assert.rejects(()=>db.query('select * from public.pv_admin_list_members($1)',[f]),/réservée/);
  await login(a);await change(u,'admin');await login(u);assert.equal((await list()).rows.length,2);await assert.rejects(()=>db.query('select * from public.pv_admin_list_members($1)',[g]),/réservée/);
  await login(a);await change(u,null);assert.equal((await list()).rows.length,1);await login(u);await assert.rejects(list,/réservée/);assert.equal((await db.query('select * from public.pv_farms')).rows.length,0);
- await db.exec('reset role');assert.equal((await db.query('select * from auth.users')).rows.length,3,'removing access does not delete accounts');
+ await db.exec('reset role');assert.equal((await db.query("select count(*)::int as n from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname like 'pv_admin_%' and p.prosecdef")).rows[0].n,0);assert.equal((await db.query('select * from auth.users')).rows.length,3,'removing access does not delete accounts');
  }finally{await db.close()}
 });

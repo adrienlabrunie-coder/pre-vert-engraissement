@@ -1,6 +1,9 @@
 -- Install once as the Supabase project owner; no existing membership is changed.
 begin;
-create function public.pv_admin_list_members(p_farm uuid)
+create schema if not exists pv_private;
+revoke all on schema pv_private from public,anon;
+grant usage on schema pv_private to authenticated;
+create function pv_private.admin_list_members(p_farm uuid)
 returns table(user_id uuid,email text,role text)
 language plpgsql security definer set search_path='' as $$
 begin
@@ -10,7 +13,7 @@ begin
  return query select m.user_id,u.email::text,m.role from public.pv_members m
  join auth.users u on u.id=m.user_id where m.farm_id=p_farm order by lower(u.email),m.user_id;
 end $$;
-create function public.pv_admin_add_member(p_farm uuid,p_email text,p_role text default 'editor')
+create function pv_private.admin_add_member(p_farm uuid,p_email text,p_role text default 'editor')
 returns void language plpgsql security definer set search_path='' as $$
 declare target uuid;
 begin
@@ -34,7 +37,7 @@ begin
  end if;
  insert into public.pv_members(farm_id,user_id,role) values(p_farm,target,p_role);
 end $$;
-create function public.pv_admin_change_member(p_farm uuid,p_user uuid,p_role text default null)
+create function pv_private.admin_change_member(p_farm uuid,p_user uuid,p_role text default null)
 returns void language plpgsql security definer set search_path='' as $$
 declare old_role text;
 begin
@@ -53,6 +56,15 @@ begin
  if p_role is null then delete from public.pv_members where farm_id=p_farm and user_id=p_user;
  else update public.pv_members set role=p_role where farm_id=p_farm and user_id=p_user;end if;
 end $$;
+revoke all on function pv_private.admin_list_members(uuid),pv_private.admin_add_member(uuid,text,text),pv_private.admin_change_member(uuid,uuid,text) from public,anon;
+grant execute on function pv_private.admin_list_members(uuid),pv_private.admin_add_member(uuid,text,text),pv_private.admin_change_member(uuid,uuid,text) to authenticated;
+create function public.pv_admin_list_members(p_farm uuid)
+returns table(user_id uuid,email text,role text)
+language sql security invoker set search_path='' as $$ select * from pv_private.admin_list_members(p_farm) $$;
+create function public.pv_admin_add_member(p_farm uuid,p_email text,p_role text default 'editor')
+returns void language sql security invoker set search_path='' as $$ select pv_private.admin_add_member(p_farm,p_email,p_role) $$;
+create function public.pv_admin_change_member(p_farm uuid,p_user uuid,p_role text default null)
+returns void language sql security invoker set search_path='' as $$ select pv_private.admin_change_member(p_farm,p_user,p_role) $$;
 revoke all on function public.pv_admin_list_members(uuid),public.pv_admin_add_member(uuid,text,text),public.pv_admin_change_member(uuid,uuid,text) from public,anon;
 grant execute on function public.pv_admin_list_members(uuid),public.pv_admin_add_member(uuid,text,text),public.pv_admin_change_member(uuid,uuid,text) to authenticated;
 commit;
