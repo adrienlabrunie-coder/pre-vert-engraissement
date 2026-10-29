@@ -15,12 +15,49 @@ const deadline=setTimeout(()=>{console.error('Deployment browser test timed out'
   const context=await browser.newContext();
   const page=await context.newPage();
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  page.on('console',msg=>console.log('Browser:',msg.text()));
+  // Exercise the scanner with a real MediaStream generated from a canvas.
+  // CI has no physical camera: Android permission is checked separately in the APK.
+  await page.addInitScript(()=>{
+   navigator.mediaDevices.getUserMedia=async constraints=>{
+    if(constraints.audio)throw Error('Scanner must not request microphone access');
+    const canvas=document.createElement('canvas');canvas.width=640;canvas.height=480;
+    const ctx=canvas.getContext('2d');ctx.fillStyle='white';ctx.fillRect(0,0,640,480);
+    const stream=canvas.captureStream(10);
+    const timer=setInterval(()=>{
+     if(!stream.active){clearInterval(timer);return}
+     ctx.fillRect(0,0,640,480);
+    },100);
+    return stream;
+   };
+  });
   console.log('Opening Pages preview');
   await page.goto(url);
   await page.getByRole('heading',{name:'Centre d’engraissement',exact:true}).waitFor();
   await page.locator('.brand img').evaluate(img=>img.decode());
   const manifest=await (await context.request.get(url+'manifest.webmanifest')).json();
   assert.equal(manifest.start_url,base);
+  console.log('Testing camera stream and permission errors');
+  await page.getByRole('button',{name:'Scanner passeport',exact:true}).click();
+  await page.getByRole('button',{name:'Activer la caméra',exact:true}).click();
+  await page.waitForFunction(()=>document.querySelector('video')?.readyState>=2).catch(async error=>{console.log('Scanner state:',await page.getByRole('dialog').innerText());throw error});
+  await page.evaluate(()=>{window.cameraTracks=document.querySelector('video').srcObject.getTracks()});
+  await page.getByRole('button',{name:'Arrêter la caméra',exact:true}).click();
+  assert.ok(await page.evaluate(()=>window.cameraTracks.every(t=>t.readyState==='ended')));
+  await page.evaluate(()=>{
+   window.originalGetUserMedia=navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+   navigator.mediaDevices.getUserMedia=()=>Promise.reject(new DOMException('Denied in test','NotAllowedError'));
+  });
+  await page.getByRole('button',{name:'Activer la caméra',exact:true}).click();
+  await page.getByRole('alert').filter({hasText:'permissions de ce site'}).waitFor();
+  assert.ok(await page.getByRole('button',{name:'Activer la caméra',exact:true}).isEnabled());
+  await page.evaluate(()=>{navigator.mediaDevices.getUserMedia=window.originalGetUserMedia});
+  await page.getByRole('button',{name:'Activer la caméra',exact:true}).click();
+  await page.waitForFunction(()=>document.querySelector('video')?.srcObject?.active);
+  await page.evaluate(()=>{window.cameraTracks=document.querySelector('video').srcObject.getTracks()});
+  await page.getByRole('button',{name:'Fermer',exact:true}).click();
+  assert.ok(await page.evaluate(()=>window.cameraTracks.every(t=>t.readyState==='ended')));
+  console.log('PASS camera stream, stop, permission error, retry and release on close.');
   console.log('Waiting for offline cache');
   await page.evaluate(()=>navigator.serviceWorker.ready);
   await page.evaluate(()=>localStorage.setItem('pv_animals',JSON.stringify([{id:'deployment-test',number:'FR TEST 001',sex:'F',race:'Limousine',birth:'2025-01-01',scores:[],weights:[],treatments:[]}])));
