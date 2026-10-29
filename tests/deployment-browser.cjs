@@ -60,6 +60,23 @@ const deadline=setTimeout(()=>{console.error('Deployment browser test timed out'
   assert.ok(await page.evaluate(()=>window.cameraTracks.every(t=>t.readyState==='ended')));
   console.log('PASS camera stream, stop, permission error, retry and release on close.');
   await require('./batch-forecast-browser.cjs')(page);
+  const lotId='d86daceb-9241-45ba-8ffb-e428289dadf2';
+  await page.evaluate(lotId=>{
+   localStorage.setItem('pv_lots',JSON.stringify([{id:lotId,name:'Box 1',building:'Bâtiment principal'}]));
+   localStorage.setItem('pv_animals',JSON.stringify([{id:'lot-label-test',number:'FR LOT 001',sex:'F',lot:lotId,scores:[],weights:[],treatments:[]}]));
+  },lotId);
+  await page.reload();
+  await page.locator('.lot-row-name b').filter({hasText:'Box 1'}).waitFor();
+  assert.ok((await page.locator('.animal-row').innerText()).includes('Box 1'));
+  assert.ok(!(await page.locator('main').innerText()).includes(lotId));
+  await page.setViewportSize({width:375,height:812});
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Lot labels fit mobile');
+  await page.locator('.animal-row').click();
+  await page.getByText('Situation actuelle',{exact:true}).waitFor();
+  assert.ok((await page.locator('.profile-metrics').innerText()).includes('Box 1'));
+  assert.ok(!(await page.locator('main').innerText()).includes(lotId));
+  await page.setViewportSize({width:1280,height:720});
+  console.log('PASS lot names displayed instead of internal UUIDs, including on mobile.');
   console.log('Waiting for offline cache');
   await page.evaluate(()=>navigator.serviceWorker.ready);
   await page.evaluate(()=>localStorage.setItem('pv_animals',JSON.stringify([{id:'deployment-test',number:'FR TEST 001',sex:'F',race:'Limousine',birth:'2025-01-01',scores:[],weights:[],treatments:[]}])));
