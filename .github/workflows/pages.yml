@@ -31,6 +31,12 @@ jobs:
       - run: node tests/cloud-browser.cjs
         env:
           VITE_BASE_PATH: /pre-vert-engraissement/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: account-sync-screenshots
+          path: /tmp/prevert-cloud-*.png
+          if-no-files-found: ignore
       - name: Include signed Android distribution
         run: if [ -d distribution/android ]; then cp -R distribution/android dist/android; fi
       - uses: actions/upload-pages-artifact@v3
