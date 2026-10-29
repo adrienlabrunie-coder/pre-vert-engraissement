@@ -69,6 +69,10 @@ const deadline=setTimeout(()=>{console.error('Deployment browser test timed out'
   await page.locator('.lot-row-name b').filter({hasText:'Box 1'}).waitFor();
   assert.ok((await page.locator('.animal-row').innerText()).includes('Box 1'));
   assert.ok(!(await page.locator('main').innerText()).includes(lotId));
+  await page.getByRole('button',{name:'Lots / Emplacements',exact:true}).click();
+  await page.locator('.lot-card h3').filter({hasText:'Box 1'}).waitFor();
+  assert.ok(!(await page.locator('main').innerText()).includes(lotId));
+  await page.getByRole('button',{name:'Accueil',exact:true}).click();
   await page.setViewportSize({width:375,height:812});
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Lot labels fit mobile');
   await page.locator('.animal-row').click();
