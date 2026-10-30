@@ -63,5 +63,19 @@ module.exports=async function(page){
  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('pv_animals')).find(a=>a.number==='FR 1234567890').targetGmq),.5);
  for(const width of [1280,390,320]){await page.setViewportSize({width,height:900});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`profile overflow ${width}`)}
  await page.setViewportSize({width:1280,height:900});
+ // A ration saved after the historical weighings must overlay the same time origin.
+ await page.evaluate(()=>localStorage.setItem('pv_animals',JSON.stringify([{id:'aligned',number:'FR ALIGN',entryDate:'2026-05-01',entryWeight:490,weights:[{date:'2026-08-10',kg:580}],scores:[],treatments:[],rations:[{date:'2026-10-30',profile:{gmq:1000,poidsDepart:460,poidsVente:700}}]}])));
+ await page.reload();
+ await page.getByLabel('Bovin du graphique').selectOption('aligned');
+ for(const width of [1280,390,320]){
+  await page.setViewportSize({width,height:900});
+  const chart=page.getByRole('img',{name:'Comparaison du poids réel et du poids prévisionnel'}).first();
+  await chart.locator('.recharts-line-curve').waitFor({state:'visible'});
+  const origin=path=>path.match(/^M([^A-Za-z]+)/)[1];
+  assert.equal(origin(await chart.locator('.recharts-line-curve').getAttribute('d')),origin(await chart.locator('.recharts-area-curve').getAttribute('d')),'measured and forecast curves share the same origin');
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+ }
+ await page.screenshot({path:'/tmp/prevert-aligned-curves.png',fullPage:true});
+ await page.setViewportSize({width:1280,height:900});
  console.log('PASS batch continuous decoding, multi-photo selection, duplicates, atomic retry, persistence, weight curves and mobile layouts.');
 };
