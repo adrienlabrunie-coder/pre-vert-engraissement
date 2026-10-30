@@ -15,7 +15,8 @@ export function weightComparison(animal,lot){
    .filter(r=>timestamp(r.date)!=null&&positive(r.profile?.gmq)&&positive(r.profile?.poidsDepart)&&positive(r.profile?.poidsVente))
    .sort((a,b)=>b.date.localeCompare(a.date)||(b.createdAt||'').localeCompare(a.createdAt||''));
   const ration=rations[0];
-  if(ration)plan={date:ration.date,kg:Number(ration.profile.poidsDepart),gmq:Number(ration.profile.gmq)/1000,target:Number(ration.profile.poidsVente),source: ration.source+' du '+ration.date};
+  // Compare both trajectories from the same observed baseline, even if the ration was saved later.
+  if(ration)plan={date:first?.date||ration.date,kg:first?Number(first.kg):Number(ration.profile.poidsDepart),gmq:Number(ration.profile.gmq)/1000,target:Number(ration.profile.poidsVente),source: ration.source+' du '+ration.date};
  }
  if(plan&&(!positive(plan.target)||plan.target<=plan.kg))plan=null;
  const points=new Map(measured.map(w=>[timestamp(w.date),{time:timestamp(w.date),actual:w.kg}]));
