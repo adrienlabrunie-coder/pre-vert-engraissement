@@ -82,6 +82,7 @@ const deadline=setTimeout(()=>{console.error('Deployment browser test timed out'
   await page.setViewportSize({width:1280,height:720});
   console.log('PASS lot names displayed instead of internal UUIDs, including on mobile.');
   await require('./ration-assignment-browser.cjs')(page);
+  await page.setViewportSize({width:1280,height:720});
   await page.evaluate(()=>{
    localStorage.setItem('pv_lots',JSON.stringify([{id:'lot-delete',name:'Lot de test'}]));
    localStorage.setItem('pv_animals',JSON.stringify([{id:'lot-member',number:'FR TEST 002',lot:'lot-delete',place:'Case 2',weights:[{date:'2026-01-01',kg:400}]}]));
