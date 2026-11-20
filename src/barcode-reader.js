@@ -23,11 +23,14 @@ class PassportBarcodeReader extends BrowserMultiFormatReader {
   if(this.centerFirst&&canvas.height>=4){
    const band=this.centerCanvas??=document.createElement('canvas');
    const height=Math.floor(canvas.height/4);
-   if(band.width!==canvas.width)band.width=canvas.width;
    if(band.height!==height)band.height=height;
    const top=Math.floor((canvas.height-height)/2);
-   band.getContext('2d').drawImage(canvas,0,top,band.width,height,0,0,band.width,height);
-   try{return this.passportResult(this.code128Reader.decodeFromCanvas(band))}catch{}
+   for(const left of [0,Math.floor(canvas.width/8)]){
+    const length=canvas.width-2*left;
+    if(band.width!==length)band.width=length;
+    band.getContext('2d').drawImage(canvas,left,top,length,height,0,0,length,height);
+    try{return this.passportResult(this.code128Reader.decodeFromCanvas(band))}catch{}
+   }
    const width=Math.floor(canvas.width/4);
    if(width){
     const column=this.columnCanvas??=document.createElement('canvas');
