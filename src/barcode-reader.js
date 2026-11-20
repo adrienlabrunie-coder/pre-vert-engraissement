@@ -35,7 +35,9 @@ export async function decodeBarcodePhoto(file,isCancelled=()=>false){
   for(const y of [0,.15,.30,.45,.60,.75])for(const x of [0,.1,.225,.35,.45])regions.push([x,y,.55,.25]);
   for(const [x,y,w,h] of regions){
    if(isCancelled())throw new Error('cancelled');
-   const sw=bitmap.width*w,sh=bitmap.height*h,scale=Math.min(2,1600/sw);
+   const sw=bitmap.width*w,sh=bitmap.height*h;
+   // Keep native pixel spacing on the full image before trying enlarged crops.
+   const scale=w===1&&h===1?Math.min(1,1600/Math.max(sw,sh)):Math.min(2,1600/Math.max(sw,sh));
    canvas.width=Math.round(sw*scale);canvas.height=Math.round(sh*scale);context.drawImage(bitmap,bitmap.width*x,bitmap.height*y,sw,sh,0,0,canvas.width,canvas.height);
    try{return reader.decodeFromCanvas(canvas)}catch{}
    await new Promise(resolve=>setTimeout(resolve,0));
