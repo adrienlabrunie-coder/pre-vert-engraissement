@@ -82,6 +82,26 @@ const deadline=setTimeout(()=>{console.error('Deployment browser test timed out'
   await page.setViewportSize({width:1280,height:720});
   console.log('PASS lot names displayed instead of internal UUIDs, including on mobile.');
   await require('./ration-assignment-browser.cjs')(page);
+  await page.evaluate(()=>{
+   localStorage.setItem('pv_lots',JSON.stringify([{id:'lot-delete',name:'Lot de test'}]));
+   localStorage.setItem('pv_animals',JSON.stringify([{id:'lot-member',number:'FR TEST 002',lot:'lot-delete',place:'Case 2',weights:[{date:'2026-01-01',kg:400}]}]));
+  });
+  await page.reload();
+  await page.getByRole('button',{name:'Lots',exact:true}).click();
+  const deleteLot=page.getByRole('button',{name:'Supprimer le lot Lot de test',exact:true});
+  page.once('dialog',dialog=>dialog.dismiss());
+  await deleteLot.click();
+  assert.equal(await deleteLot.isVisible(),true);
+  page.once('dialog',dialog=>dialog.accept());
+  await deleteLot.click();
+  await deleteLot.waitFor({state:'detached'});
+  await page.reload();
+  assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.pv_lots)),[]);
+  const [member]=await page.evaluate(()=>JSON.parse(localStorage.pv_animals));
+  assert.equal(member.lot,'');
+  assert.equal(member.place,'');
+  assert.deepEqual(member.weights,[{date:'2026-01-01',kg:400}]);
+  console.log('PASS lot deletion, cancellation and preservation of individual history.');
   console.log('Waiting for offline cache');
   await page.evaluate(()=>navigator.serviceWorker.ready);
   await page.evaluate(()=>localStorage.setItem('pv_animals',JSON.stringify([{id:'deployment-test',number:'FR TEST 001',sex:'F',race:'Limousine',birth:'2025-01-01',scores:[],weights:[],treatments:[]}])));

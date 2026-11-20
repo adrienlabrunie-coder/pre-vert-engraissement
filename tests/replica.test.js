@@ -23,3 +23,21 @@ test('La suppression conserve une création en cours de synchronisation et les �
  assert.equal(pendingRecords(deleted).length,4);
  assert.ok(pendingRecords(deleted).every(r=>r.deleted));
 });
+
+test('Supprimer un lot partagé détache ses bovins et conserve leur historique individuel',async()=>{
+ const {withoutLot}=await import('../src/cloud/workspace.js');
+ const draft=editReplica(emptyReplica(),{
+  animals:[{...animal,lot:'a-lot',place:'Case 2'},{id:'other',lot:'other-lot',place:'Case 3'}],
+  lots:[{id:'a-lot',rations:[{id:'recipe'}]},{id:'other-lot'}]
+ });
+ const shared=mergeRemote(draft,Object.values(draft.desired).map(record=>({...record,version:1})));
+ const before=snapshotOf(shared);
+ const deleted=editReplica(shared,withoutLot(before,'a-lot'));
+ assert.deepEqual(snapshotOf(deleted),{
+  animals:[{...before.animals[0],lot:'',place:''},before.animals[1]],
+  lots:[before.lots[1]]
+ });
+ assert.deepEqual(pendingRecords(deleted).map(record=>[record.kind,record.deleted]),[
+  ['animal',false],['lot',true],['ration',true]
+ ]);
+});

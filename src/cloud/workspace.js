@@ -1,11 +1,18 @@
 import {emptyReplica,editReplica,snapshotOf,pendingRecords,recordKey,sameRecord,mergeRemote,resolveReplica} from './replica.js';
 import {readWorkspace,writeWorkspace} from './storage.js';
+
+export function withoutLot(snapshot, lotId){
+ return {
+  animals:snapshot.animals.map(animal=>animal.lot===lotId?{...animal,lot:'',place:''}:animal),
+  lots:snapshot.lots.filter(lot=>lot.id!==lotId)
+ };
+}
 export function localWorkspace(seed,lotsSeed){
  const read=(key,fallback)=>{const text=localStorage.getItem(key);return text?JSON.parse(text):fallback};
  let snapshot={animals:read('pv_animals',seed),lots:read('pv_lots',lotsSeed)};const listeners=new Set();
  // Preserve legacy keys and keep the local mode separate from all cloud accounts.
  for(const [field,key] of [['animals','pv_animals'],['lots','pv_lots']])if(!localStorage.getItem(key))localStorage.setItem(key,JSON.stringify(snapshot[field]));
- return {mode:'local',getSnapshot:()=>snapshot,subscribe:fn=>{listeners.add(fn);return()=>listeners.delete(fn)},async update(field,value){const next=typeof value==='function'?value(snapshot[field]):value;localStorage.setItem(field==='animals'?'pv_animals':'pv_lots',JSON.stringify(next));snapshot={...snapshot,[field]:next};listeners.forEach(fn=>fn())},async replace(data){const oldA=localStorage.getItem('pv_animals'),oldL=localStorage.getItem('pv_lots');try{localStorage.setItem('pv_animals',JSON.stringify(data.animals));localStorage.setItem('pv_lots',JSON.stringify(data.lots))}catch(e){try{if(oldA!==null)localStorage.setItem('pv_animals',oldA);if(oldL!==null)localStorage.setItem('pv_lots',oldL)}catch{}throw e}snapshot=data;listeners.forEach(fn=>fn())}};
+ const store={mode:'local',getSnapshot:()=>snapshot,subscribe:fn=>{listeners.add(fn);return()=>listeners.delete(fn)},async update(field,value){const next=typeof value==='function'?value(snapshot[field]):value;localStorage.setItem(field==='animals'?'pv_animals':'pv_lots',JSON.stringify(next));snapshot={...snapshot,[field]:next};listeners.forEach(fn=>fn())},deleteLot:lotId=>store.replace(withoutLot(snapshot,lotId)),async replace(data){const oldA=localStorage.getItem('pv_animals'),oldL=localStorage.getItem('pv_lots');try{localStorage.setItem('pv_animals',JSON.stringify(data.animals));localStorage.setItem('pv_lots',JSON.stringify(data.lots))}catch(e){try{if(oldA===null)localStorage.removeItem('pv_animals');else localStorage.setItem('pv_animals',oldA);if(oldL===null)localStorage.removeItem('pv_lots');else localStorage.setItem('pv_lots',oldL)}catch{}throw e}snapshot=data;listeners.forEach(fn=>fn())}};return store;
 }
 export async function cloudWorkspace(client,user,farm){
  const key=`${user.id}:${farm.id}`;let state=await readWorkspace(key)||emptyReplica();let snapshot=snapshotOf(state);const listeners=new Set();let queue=Promise.resolve();
@@ -14,8 +21,13 @@ export async function cloudWorkspace(client,user,farm){
  const serial=fn=>{const work=queue.then(fn);queue=work.catch(()=>{});return work};
  const check=async()=>{const {data,error}=await client.from('pv_members').select('role').eq('farm_id',farm.id).eq('user_id',user.id).maybeSingle();if(error)throw error;if(!data){farm.role='revoked';const denied=new Error('Accès à cet élevage refusé. Les saisies locales sont conservées.');denied.code='PV_REVOKED';throw denied;}return data.role};
  const rpc=async op=>{const r=await client.rpc('pv_apply_operation',{p_farm:farm.id,p_operation:op.operationId,p_kind:op.record.kind,p_id:op.record.id,p_expected:op.expected,p_payload:op.record.payload,p_deleted:op.record.deleted,p_subject_kind:op.record.subject_kind,p_subject_id:op.record.subject_id});if(r.error){const error=new Error(r.error.message);error.code=r.error.code;throw error;}return r.data};
+ const edit=transform=>serial(async()=>{
+  if(!['admin','editor'].includes(farm.role))throw new Error('Ce compte dispose uniquement d’un accès en lecture.');
+  await persist(editReplica(state,transform(snapshot)));
+ });
  const store={mode:'cloud',user,farm,getSnapshot:()=>snapshot,subscribe:fn=>{listeners.add(fn);return()=>listeners.delete(fn)},getStatus:()=>({pending:pendingRecords(state).length+(state.inflight&&!pendingRecords(state).some(r=>recordKey(r)===recordKey(state.inflight.record))?1:0),conflicts:state.conflicts,lastSync:state.lastSync}),
- update:(field,value)=>serial(async()=>{if(!['admin','editor'].includes(farm.role))throw new Error('Ce compte dispose uniquement d’un accès en lecture.');const next=typeof value==='function'?value(snapshot[field]):value;await persist(editReplica(state,{...snapshot,[field]:next}))}),
+ update:(field,value)=>edit(current=>({...current,[field]:typeof value==='function'?value(current[field]):value})),
+ deleteLot:lotId=>edit(current=>withoutLot(current,lotId)),
  replace:data=>serial(async()=>{if(farm.role!=='admin')throw new Error('Accès en lecture seule.');if(Object.keys(state.desired).length)throw new Error('L’import est réservé à une base partagée vide pour éviter de remplacer les données de l’équipe.');await persist(editReplica(state,data))}),
  restoreBackup:params=>serial(async()=>{
   if(!navigator.onLine)throw new Error('Une connexion Internet est nécessaire.');
