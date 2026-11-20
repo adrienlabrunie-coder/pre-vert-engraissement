@@ -88,7 +88,7 @@ const deadline=setTimeout(()=>{console.error('Deployment browser test timed out'
    localStorage.setItem('pv_animals',JSON.stringify([{id:'lot-member',number:'FR TEST 002',lot:'lot-delete',place:'Case 2',weights:[{date:'2026-01-01',kg:400}]}]));
   });
   await page.reload();
-  await page.getByRole('button',{name:'Lots',exact:true}).click();
+  await page.getByRole('button',{name:'Lots / Emplacements',exact:true}).click();
   const deleteLot=page.getByRole('button',{name:'Supprimer le lot Lot de test',exact:true});
   page.once('dialog',dialog=>dialog.dismiss());
   await deleteLot.click();
