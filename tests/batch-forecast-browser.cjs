@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');
-const {MultiFormatWriter,BarcodeFormat}=require('@zxing/library');
+const {MultiFormatWriter,BarcodeFormat,Code128Reader}=require('@zxing/library');
 function matrix(raw){const bits=new MultiFormatWriter().encode(raw,BarcodeFormat.QR_CODE,240,240,new Map());return Array.from({length:bits.getHeight()},(_,y)=>Array.from({length:bits.getWidth()},(_,x)=>bits.get(x,y)))}
 const asda=n=>'FR'+n+'  '+'1'+'34'+'3879'+'12052025'+'2'+'0'+'1'+'12345678'+'87654321'+'123456789012';
 module.exports=async function(page){
@@ -18,6 +18,32 @@ module.exports=async function(page){
  await page.evaluate(()=>{window.testCameraMatrix=null});
  assert.equal(await page.getByLabel('Sexe du bovin 1').inputValue(),'F');
  assert.equal(await page.getByLabel('Naissance du bovin 2',{exact:true}).inputValue(),'2025-05-12');
+ // A vertical Code 128 represents the short ASDA format used on the green label.
+ const shortAsda='FR1234567892  190990911232343433344020';
+ const symbols=[104,...Array.from(shortAsda,character=>character.charCodeAt(0)-32)];
+ const checksum=symbols.reduce((sum,symbol,index)=>sum+Math.max(1,index)*symbol,0)%103;
+ const runs=[...symbols,checksum,106].flatMap(symbol=>Code128Reader.CODE_PATTERNS[symbol]);
+ const verticalPhoto=await page.evaluate(runs=>{
+  const canvas=document.createElement('canvas');
+  canvas.width=360;
+  canvas.height=80+2*runs.reduce((sum,run)=>sum+run,0);
+  const context=canvas.getContext('2d');
+  context.fillStyle='white';
+  context.fillRect(0,0,canvas.width,canvas.height);
+  context.fillStyle='black';
+  let y=40;
+  for(const [index,run] of runs.entries()){
+   if(index%2===0)context.fillRect(90,y,95,run*2);
+   y+=run*2;
+  }
+  return canvas.toDataURL('image/png').split(',')[1];
+ },runs);
+ await page.getByLabel('Photos des passeports').setInputFiles({
+  name:'asda-verticale.png',mimeType:'image/png',buffer:Buffer.from(verticalPhoto,'base64')
+ });
+ await page.waitForFunction(()=>document.querySelectorAll('.batch-row').length===3);
+ assert.equal(await page.getByLabel('Numéro du bovin 3').inputValue(),'FR 1234567892');
+ await page.getByRole('button',{name:'Retirer le bovin 3',exact:true}).click();
  await page.getByRole('button',{name:'Retirer le bovin 2',exact:true}).click();
  const images=[];
  for(const raw of [asda('1234567890'),asda('1234567891')]){

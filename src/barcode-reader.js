@@ -1,6 +1,30 @@
 import {BrowserMultiFormatReader} from '@zxing/browser';
-import {DecodeHintType} from '@zxing/library';
-export const makeBarcodeReader=()=>new BrowserMultiFormatReader(new Map([[DecodeHintType.TRY_HARDER,true]]));
+import {BarcodeFormat,DecodeHintType} from '@zxing/library';
+
+class PassportBarcodeReader extends BrowserMultiFormatReader {
+ constructor(){
+  super(new Map([[DecodeHintType.TRY_HARDER,true]]));
+  this.verticalReader=new BrowserMultiFormatReader(new Map([
+   [DecodeHintType.TRY_HARDER,true],
+   [DecodeHintType.POSSIBLE_FORMATS,[BarcodeFormat.CODE_128]],
+  ]));
+ }
+
+ decodeFromCanvas(canvas){
+  try{return super.decodeFromCanvas(canvas)}catch(originalError){
+   // ZXing's canvas reader does not rotate one-dimensional codes.
+   const rotated=this.rotatedCanvas??=document.createElement('canvas');
+   if(rotated.width!==canvas.height)rotated.width=canvas.height;
+   if(rotated.height!==canvas.width)rotated.height=canvas.width;
+   const context=rotated.getContext('2d');
+   context.setTransform(0,-1,1,0,0,rotated.height);
+   context.drawImage(canvas,0,0);
+   try{return this.verticalReader.decodeFromCanvas(rotated)}catch{throw originalError}
+  }
+ }
+}
+
+export const makeBarcodeReader=()=>new PassportBarcodeReader();
 // Search overlapping regions so the code is not lost among the surrounding text.
 export async function decodeBarcodePhoto(file,isCancelled=()=>false){
  const bitmap=await createImageBitmap(file);
