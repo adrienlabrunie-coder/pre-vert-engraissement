@@ -22,7 +22,7 @@ module.exports=async function(page){
  const shortAsda='FR1234567892  190990911232343433344020';
  const symbols=[104,...Array.from(shortAsda,character=>character.charCodeAt(0)-32)];
  const checksum=symbols.reduce((sum,symbol,index)=>sum+Math.max(1,index)*symbol,0)%103;
- const runs=[...symbols,checksum,106].flatMap(symbol=>Code128Reader.CODE_PATTERNS[symbol]);
+ const runs=[...symbols,checksum,106].flatMap(symbol=>Array.from(Code128Reader.CODE_PATTERNS[symbol]));
  const verticalPhoto=await page.evaluate(runs=>{
   const canvas=document.createElement('canvas');
   canvas.width=360;
