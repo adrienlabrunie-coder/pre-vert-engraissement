@@ -24,7 +24,11 @@ export function snapshotOf(replica){
 }
 export function editReplica(replica,snapshot){
  const next=clone(replica),records=flattenSnapshot(snapshot);
- for(const [key,old] of Object.entries(next.desired))if(!records[key])records[key]={...old,deleted:true};
+ const inflightKey=next.inflight&&recordKey(next.inflight.record);
+ for(const [key,old] of Object.entries(next.desired)){
+  // An unsent creation can be dropped. An in-flight creation may already be on the server.
+  if(!records[key]&&(next.base[key]||next.conflicts[key]||key===inflightKey))records[key]={...old,deleted:true};
+ }
  next.desired=records;return next;
 }
 export function pendingRecords(replica){return Object.values(replica.desired).filter(r=>!sameRecord(r,replica.base[recordKey(r)])&&!replica.conflicts[recordKey(r)]).sort((a,b)=>(['animal','lot'].includes(a.kind)?0:1)-(['animal','lot'].includes(b.kind)?0:1));}
