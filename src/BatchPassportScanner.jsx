@@ -8,14 +8,16 @@ export default function BatchPassportScanner({animals,lots,onSave,onDirtyChange}
  useEffect(()=>{onDirtyChange(rows.length>0);return()=>onDirtyChange(false)},[rows.length,onDirtyChange]);
  const capture=raw=>{
   // Repeated frames from a passport already seen do not add duplicate drafts.
-  if(seen.current.has(raw))return;
+  if(seen.current.has(raw))return false;
   seen.current.add(raw);
   try{
    const candidate=passportCandidate(raw),key=normalizeAnimalNumber(candidate.number);
-   if(animals.some(a=>normalizeAnimalNumber(a.number)===key)){setError(`${candidate.number} existe déjà dans le cheptel.`);return}
+   if(animals.some(a=>normalizeAnimalNumber(a.number)===key)){setError(`${candidate.number} existe déjà dans le cheptel.`);return false}
+   if(rows.some(a=>normalizeAnimalNumber(a.number)===key))return false;
    setRows(previous=>previous.some(a=>normalizeAnimalNumber(a.number)===key)?previous:[...previous,{...candidate,draftId:crypto.randomUUID()}]);
    setConfirmed(false);setMessage(`${candidate.number} lu — à vérifier dans la liste.`);setError('');
-  }catch(e){setError(e.message)}
+   return true;
+  }catch(e){setError(e.message);return false}
  };
  const edit=(id,key,value)=>{setRows(rs=>rs.map(r=>r.draftId===id?{...r,[key]:value}:r));setConfirmed(false);setError('')};
  const setting=(key,value)=>{setSettings(s=>({...s,[key]:value}));setConfirmed(false)};

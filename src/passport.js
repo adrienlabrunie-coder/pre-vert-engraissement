@@ -41,5 +41,46 @@ export function parseAsda2007(value,now=new Date().toISOString().slice(0,10)){
  const parsed=new Date(birth+'T12:00:00Z');
  if(!/^\d{4}-\d{2}-\d{2}$/.test(birth)||!Number.isFinite(parsed.getTime())||parsed.toISOString().slice(0,10)!==birth||birth>now||!['1','2'].includes(raw[29]))return null;
  const codes={race:raw.slice(15,17),father:raw.slice(17,19),mother:raw.slice(19,21)};
- return {fields:{number:'FR '+identifier,birth,sex:raw[29]==='1'?'M':'F',...Object.fromEntries(Object.entries(codes).map(([k,v])=>[k,breedLabel(v)]))},codes,format:'ASDA-2007',warnings:Object.entries(codes).filter(([,v])=>v!=='00'&&!breedLabel(v)).map(([k,v])=>`Code racial ${k} ${v} absent du référentiel 2018 : saisie manuelle nécessaire.`)};
+ return passportDetails(identifier, birth, raw[29], codes, 'ASDA-2007');
+}
+
+function passportDetails(identifier, birth, sex, codes, format) {
+ const fields = {number: `FR ${identifier}`, birth, sex: sex === '1' ? 'M' : 'F'};
+ const warnings = [];
+ for (const [key, code] of Object.entries(codes)) {
+  fields[key] = breedLabel(code);
+  if (code !== '00' && !fields[key]) {
+   warnings.push(`Code racial ${key} ${code} absent du référentiel 2018 : saisie manuelle nécessaire.`);
+  }
+ }
+ return {fields, codes, format, warnings};
+}
+
+function shortBirthDate(date, today) {
+ const currentYear = Number(today.slice(0, 4));
+ const year = Math.floor(currentYear / 100) * 100 + Number(date.slice(4));
+ const birth = `${year > currentYear ? year - 100 : year}-${date.slice(2, 4)}-${date.slice(0, 2)}`;
+ const parsed = new Date(`${birth}T12:00:00Z`);
+ return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === birth && birth <= today ? birth : '';
+}
+
+// Formats courts reconnus par le lecteur de Farm Animal Manager.
+export function decodePassport(value, today = new Date().toISOString().slice(0, 10)) {
+ const fullAsda = parseAsda2007(value, today);
+ if (fullAsda) return fullAsda;
+
+ const raw = String(value ?? '').trim().toUpperCase().replace(/\s/g, '');
+ const passport = raw.match(/^(\d{10})([12])(\d{2})(\d{2})(\d{2})(\d{6})\d$/);
+ if (passport) {
+  const [, identifier, sex, race, father, mother, date] = passport;
+  const birth = shortBirthDate(date, today);
+  return birth ? passportDetails(identifier, birth, sex, {race, father, mother}, 'Passeport bovin (ITF)') : null;
+ }
+
+ // L’ASDA courte encode les races des parents et le cheptel de détention.
+ const health = raw.match(/^FR(\d{10})([12])\d{4}(\d{6})\d(\d{2})(\d{2})\d{8}$/);
+ if (!health) return null;
+ const [, identifier, sex, date, father, mother] = health;
+ const birth = shortBirthDate(date, today);
+ return birth ? passportDetails(identifier, birth, sex, {father, mother}, 'ASDA courte') : null;
 }

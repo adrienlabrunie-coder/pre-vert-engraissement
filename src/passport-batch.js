@@ -1,10 +1,10 @@
-import {parseAsda2007,parseBarcode,validatePassport} from './passport.js';
+import {decodePassport,parseBarcode,validatePassport} from './passport.js';
 import {localDate} from './scoring.js';
 export const normalizeAnimalNumber=value=>String(value||'').replace(/\s/g,'').toUpperCase();
 export function passportCandidate(raw){
- const decoded=parseAsda2007(raw),number=decoded?.fields.number||parseBarcode(raw);
+ const decoded=decodePassport(raw),number=decoded?.fields.number||parseBarcode(raw);
  if(!number)throw new Error('Code non reconnu : utilisez un code du sujet ou saisissez FR suivi de dix chiffres.');
- return {number,birth:'',sex:'',race:'',father:'',mother:'',entryWeight:'',...decoded?.fields,warnings:decoded?.warnings||[],source:decoded?'ASDA 2007':'Identifiant seul'};
+ return {number,birth:'',sex:'',race:'',father:'',mother:'',entryWeight:'',...decoded?.fields,warnings:decoded?.warnings||[],source:decoded?.format==='ASDA-2007'?'ASDA 2007':decoded?.format||'Identifiant seul'};
 }
 const validDate=value=>/^\d{4}-\d{2}-\d{2}$/.test(value||'')&&Number.isFinite(Date.parse(value))&&new Date(value).toISOString().slice(0,10)===value;
 export function appendPassportBatch(existing,rows,settings,now=localDate()){

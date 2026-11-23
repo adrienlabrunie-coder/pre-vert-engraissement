@@ -23,3 +23,14 @@ test('ASDA batch extraction preserves subject and parent races; identifier alone
  const asda='FR1234567890  '+'1'+'34'+'3879'+'12052025'+'2'+'0'+'1'+'12345678'+'87654321'+'123456789012';
  const row=passportCandidate(asda);assert.equal(row.birth,'2025-05-12');assert.equal(row.sex,'F');assert.equal(row.race,'LIMOUSINE');assert.equal(passportCandidate('1234567891').sex,'');assert.throws(()=>passportCandidate('invalid'),/non reconnu/);
 });
+
+test('Le passeport ITF et l’ASDA courte préremplissent les champs attestés par le code', () => {
+ const itf = passportCandidate('12 3456 7890 2 34 38 79 120525 5');
+ assert.deepEqual([itf.number, itf.birth, itf.sex, itf.race, itf.father, itf.mother],
+  ['FR 1234567890', '2025-05-12', 'F', 'LIMOUSINE', 'CHAROLAISE', "BLONDE D'AQUITAINE"]);
+ const asda = passportCandidate('FR1234567891190991205251343887654321');
+ assert.deepEqual([asda.number, asda.birth, asda.sex, asda.race, asda.father, asda.mother],
+  ['FR 1234567891', '2025-05-12', 'M', '', 'LIMOUSINE', 'CHAROLAISE']);
+ assert.throws(() => passportCandidate('123456789023438793102255'), /non reconnu/);
+ assert.throws(() => passportCandidate('12345678902343879120525'), /non reconnu/);
+});
