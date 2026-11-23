@@ -8,7 +8,10 @@ let workerPromise;
 
 async function createRaceWorker() {
  const langPath = modelPath.slice(0,modelPath.lastIndexOf('/'));
- const worker = await createWorker('eng', 1, {workerPath, corePath, langPath, workerBlobURL:false, cacheMethod:'none'});
+ const worker = await createWorker('eng', 1, {
+  workerPath, corePath, langPath, workerBlobURL:false, cacheMethod:'none',
+  gzip:modelPath.endsWith('.gz'),
+ });
  await worker.setParameters({tessedit_pageseg_mode:PSM.SPARSE_TEXT});
  return worker;
 }

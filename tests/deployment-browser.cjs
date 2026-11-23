@@ -41,7 +41,7 @@ const deadline=setTimeout(()=>{console.error('Deployment browser test timed out'
   console.log('Testing camera stream and permission errors');
   await page.getByRole('button',{name:'Scanner passeport',exact:true}).click();
   await page.getByRole('button',{name:'Activer la caméra',exact:true}).click();
-  await page.getByText('Place le code-barres entier sur le trait rouge', {exact:false}).waitFor();
+  await page.getByText('code-barres entier sur le trait rouge', {exact:false}).waitFor();
   assert.ok(await page.locator('.barcode-aim').isVisible());
   await page.waitForFunction(()=>document.querySelector('video')?.readyState>=2).catch(async error=>{console.log('Scanner state:',await page.getByRole('dialog').innerText());throw error});
   await page.evaluate(()=>{window.cameraTracks=document.querySelector('video').srcObject.getTracks()});
