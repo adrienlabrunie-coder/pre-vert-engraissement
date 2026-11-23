@@ -1,8 +1,8 @@
-import {decodePassport,parseBarcode,validatePassport} from './passport.js';
+import {decodePassportCapture,parseBarcode,validatePassport} from './passport.js';
 import {localDate} from './scoring.js';
 export const normalizeAnimalNumber=value=>String(value||'').replace(/\s/g,'').toUpperCase();
-export function passportCandidate(raw){
- const decoded=decodePassport(raw),number=decoded?.fields.number||parseBarcode(raw);
+export function passportCandidate(raw,raceCode){
+ const decoded=decodePassportCapture(raw,raceCode),number=decoded?.fields.number||parseBarcode(raw);
  if(!number)throw new Error('Code non reconnu : utilisez un code du sujet ou saisissez FR suivi de dix chiffres.');
  return {number,birth:'',sex:'',race:'',father:'',mother:'',entryWeight:'',...decoded?.fields,warnings:decoded?.warnings||[],source:decoded?.format==='ASDA-2007'?'ASDA 2007':decoded?.format||'Identifiant seul'};
 }

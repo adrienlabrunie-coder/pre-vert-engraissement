@@ -6,14 +6,21 @@ export default function BatchPassportScanner({animals,lots,onSave,onDirtyChange}
  const [rows,setRows]=useState([]),[settings,setSettings]=useState({entryDate:localDate(),lot:'',place:'',target:'',targetGmq:''}),[confirmed,setConfirmed]=useState(false),[message,setMessage]=useState(''),[error,setError]=useState(''),[saving,setSaving]=useState(false);
  const seen=useRef(new Set()),savingRef=useRef(false);
  useEffect(()=>{onDirtyChange(rows.length>0);return()=>onDirtyChange(false)},[rows.length,onDirtyChange]);
- const capture=raw=>{
+ const capture=(raw,raceCode)=>{
   // Repeated frames from a passport already seen do not add duplicate drafts.
-  if(seen.current.has(raw))return false;
-  seen.current.add(raw);
+  const captureKey = `${raw}/${raceCode||''}`;
+  if(seen.current.has(captureKey))return false;
+  seen.current.add(captureKey);
   try{
-   const candidate=passportCandidate(raw),key=normalizeAnimalNumber(candidate.number);
+   const candidate=passportCandidate(raw,raceCode),key=normalizeAnimalNumber(candidate.number);
    if(animals.some(a=>normalizeAnimalNumber(a.number)===key)){setError(`${candidate.number} existe déjà dans le cheptel.`);return false}
-   if(rows.some(a=>normalizeAnimalNumber(a.number)===key))return false;
+   const existing=rows.find(a=>normalizeAnimalNumber(a.number)===key);
+   if(existing){
+    if(existing.race||!candidate.race)return false;
+    edit(existing.draftId,'race',candidate.race);
+    setMessage(`${candidate.number} · race lue, à vérifier dans la liste.`);
+    return true;
+   }
    setRows(previous=>previous.some(a=>normalizeAnimalNumber(a.number)===key)?previous:[...previous,{...candidate,draftId:crypto.randomUUID()}]);
    setConfirmed(false);setMessage(`${candidate.number} lu — à vérifier dans la liste.`);setError('');
    return true;

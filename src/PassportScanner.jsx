@@ -2,7 +2,7 @@ import {Capacitor} from '@capacitor/core';
 import {cameraErrorMessage} from './camera-error.js';
 import React,{useState,useRef,useEffect} from 'react';
 import {decodeBarcodePhoto,scanPassportVideo} from './barcode-reader.js';
-import {decodePassport,parseBarcode} from './passport.js';
+import {decodePassportCapture,parseBarcode} from './passport.js';
 
 const formatLabel = format => format === 'ASDA-2007' ? 'ASDA 2007' : format;
 
@@ -31,9 +31,9 @@ export default function PassportScanner({animals,onApply,onCapture,disabled=fals
  useEffect(() => releaseCamera, []);
  useEffect(() => { if (disabled) stop(); }, [disabled]);
 
- function accept(value) {
-  if (onCapture) return onCapture(value);
-  const data = decodePassport(value);
+ function accept(value, raceCode) {
+  if (onCapture) return onCapture(value,raceCode);
+  const data = decodePassportCapture(value,raceCode);
   const identity = data?.fields.number || parseBarcode(value);
   setRaw(value);
   setDecoded(data);
@@ -70,8 +70,8 @@ export default function PassportScanner({animals,onApply,onCapture,disabled=fals
    preview.srcObject = media;
    await preview.play();
    if (signal.aborted) return;
-   await scanPassportVideo(preview, code => {
-    const accepted = acceptRef.current(code);
+   await scanPassportVideo(preview, ({code,raceCode}) => {
+    const accepted = acceptRef.current(code,raceCode);
     if (accepted) {
      navigator.vibrate?.(80);
      if (!onCapture) stop();
@@ -104,8 +104,8 @@ export default function PassportScanner({animals,onApply,onCapture,disabled=fals
     continue;
    }
    try {
-    const code = await decodeBarcodePhoto(file, () => signal.aborted);
-    if (!signal.aborted) acceptRef.current(code);
+    const {code,raceCode} = await decodeBarcodePhoto(file, () => signal.aborted);
+    if (!signal.aborted) acceptRef.current(code,raceCode);
    } catch {
     failures.push(`${file.name} : aucun code-barres lisible. Cadrez un seul code, net et bien éclairé.`);
    }
@@ -121,15 +121,15 @@ export default function PassportScanner({animals,onApply,onCapture,disabled=fals
    <video ref={video} muted playsInline className="barcode-video" aria-label="Caméra des passeports"/>
    {cameraPreview&&<span className="barcode-aim" aria-hidden="true"/>}
   </div>
-  {cameraPreview&&<p className="hint">Place le code-barres entier sur le trait rouge, avec un peu d’espace blanc aux deux extrémités.</p>}
+  {cameraPreview&&<p className="hint">Placez le code-barres entier sur le trait rouge. Pour une carte verte, gardez aussi la ligne « Type racial » dans le cadre.</p>}
  </>;
  if(onCapture)return <form className="form passport-form" onSubmit={e=>{e.preventDefault();if(raw.trim()){accept(raw);setRaw('')}}}>
  {preview}
  <div className="source-links"><button type="button" className="primary" disabled={busy||disabled} onClick={camera}>Activer la caméra</button><button type="button" className="outline" onClick={stop}>Arrêter la caméra</button></div>
- {busy&&<p role="status">Lecture en cours… Présentez le passeport suivant.</p>}
+ {busy&&<p role="status">Lecture en cours… Attendez la confirmation avant de changer de carte.</p>}
  <label>Photos des passeports<input type="file" accept="image/*" multiple disabled={busy||disabled} onChange={photo}/></label>
  <label>Code lu / lecteur USB<input value={raw} disabled={disabled} onChange={e=>setRaw(e.target.value)} placeholder="Code-barres ou FR 1234567890"/></label><button type="submit" className="outline" disabled={disabled||!raw.trim()}>Ajouter ce code à la liste</button>
  {error&&<p role="alert" className="warning">{error}</p>}
  </form>;
- return <form className="form passport-form" onSubmit={apply}><p>Flashez le code-barres du sujet avec la caméra. Le décodage se fait sur cet appareil : aucune IA, aucune lecture automatique du texte, aucun envoi d’image.</p><p className="hint">Scannez le code-barres du passeport rose ou de l’ASDA verte. Les informations disponibles sur le code seront préremplies pour vérification.</p>{preview}<div className="source-links"><button type="button" className="primary" disabled={busy} onClick={camera}>Activer la caméra</button><button type="button" className="outline" onClick={stop}>Arrêter la caméra</button></div>{busy&&<p role="status">Lecture du code-barres en cours…</p>}<label>Photo du code-barres<input type="file" accept="image/*" capture="environment" disabled={busy} onChange={photo}/></label><label>Code lu / lecteur USB<input value={raw} onChange={e=>accept(e.target.value)} placeholder="Résultat brut du code-barres"/></label><label>Identification du sujet<input value={number} onChange={e=>{setNumber(e.target.value);setVerified(false);setDecoded(null);setDetailsVerified(false)}} placeholder="FR 1234567890"/></label><label className="check-row"><input type="checkbox" checked={verified} onChange={e=>setVerified(e.target.checked)}/>J’ai vérifié que ce numéro est celui du sujet et que le pays est FR.</label>{decoded&&<section className="asda-preview"><h3>{formatLabel(decoded.format)} · informations à vérifier</h3><p>Naissance : {decoded.fields.birth} · Sexe : {decoded.fields.sex==='M'?'Mâle':'Femelle'}</p>{[['race','Sujet'],['father','Père'],['mother','Mère']].filter(([key])=>key in decoded.codes).map(([key,label])=><p key={key}>{label} : {decoded.fields[key]||'À renseigner'} · code {decoded.codes[key]}</p>)}{decoded.warnings.map(w=><p key={w} className="warning">{w}</p>)}{decoded.format==='ASDA-2007'&&<p className="hint">Un jour ou mois inconnu peut être codé 01.</p>}{decoded.format==='ASDA courte'&&<p className="hint">Vérifiez la race du sujet et le cheptel de provenance sur la fiche du bovin.</p>}<label className="check-row"><input type="checkbox" checked={detailsVerified} onChange={e=>setDetailsVerified(e.target.checked)}/>J’ai vérifié la naissance, le sexe et les races sur le document.</label></section>}{error&&<p role="alert" className="warning">{error}</p>}<button className="primary" type="submit" disabled={busy}>Continuer vers la fiche du bovin</button><p className="hint">Aucun bovin n’est créé avant l’enregistrement de la fiche.</p></form>;
+ return <form className="form passport-form" onSubmit={apply}><p>Flashez le code-barres du sujet avec la caméra. Le code-barres et la case « Type racial » sont lus sur cet appareil, sans envoi d’image.</p><p className="hint">Scannez le code-barres du passeport rose ou de l’ASDA verte. Les informations disponibles sur le code seront préremplies pour vérification.</p>{preview}<div className="source-links"><button type="button" className="primary" disabled={busy} onClick={camera}>Activer la caméra</button><button type="button" className="outline" onClick={stop}>Arrêter la caméra</button></div>{busy&&<p role="status">Lecture du code-barres en cours…</p>}<label>Photo du code-barres<input type="file" accept="image/*" capture="environment" disabled={busy} onChange={photo}/></label><label>Code lu / lecteur USB<input value={raw} onChange={e=>accept(e.target.value)} placeholder="Résultat brut du code-barres"/></label><label>Identification du sujet<input value={number} onChange={e=>{setNumber(e.target.value);setVerified(false);setDecoded(null);setDetailsVerified(false)}} placeholder="FR 1234567890"/></label><label className="check-row"><input type="checkbox" checked={verified} onChange={e=>setVerified(e.target.checked)}/>J’ai vérifié que ce numéro est celui du sujet et que le pays est FR.</label>{decoded&&<section className="asda-preview"><h3>{formatLabel(decoded.format)} · informations à vérifier</h3><p>Naissance : {decoded.fields.birth} · Sexe : {decoded.fields.sex==='M'?'Mâle':'Femelle'}</p>{[['race','Sujet'],['father','Père'],['mother','Mère']].filter(([key])=>key in decoded.codes).map(([key,label])=><p key={key}>{label} : {decoded.fields[key]||'À renseigner'} · code {decoded.codes[key]}</p>)}{decoded.warnings.map(w=><p key={w} className="warning">{w}</p>)}{decoded.format==='ASDA-2007'&&<p className="hint">Un jour ou mois inconnu peut être codé 01.</p>}{decoded.format==='ASDA courte'&&!decoded.fields.race&&<p className="hint">Race à compléter sur la fiche. Pour la lire, prenez une photo qui inclut la case « Type racial » et le code-barres.</p>}<label className="check-row"><input type="checkbox" checked={detailsVerified} onChange={e=>setDetailsVerified(e.target.checked)}/>J’ai vérifié la naissance, le sexe et les races sur le document.</label></section>}{error&&<p role="alert" className="warning">{error}</p>}<button className="primary" type="submit" disabled={busy}>Continuer vers la fiche du bovin</button><p className="hint">Aucun bovin n’est créé avant l’enregistrement de la fiche.</p></form>;
 }

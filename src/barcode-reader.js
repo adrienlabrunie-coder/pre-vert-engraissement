@@ -20,11 +20,25 @@ async function readWithZbar(canvas) {
   const {scanner, scanImageData} = await zbarPromise;
   const context = canvas.getContext('2d', {willReadFrequently: true});
   const symbols = await scanImageData(context.getImageData(0, 0, canvas.width, canvas.height), scanner);
-  const codes = symbols.map(symbol => symbol.decode());
-  return codes.find(code => decodePassport(code)) || codes.find(code => parseBarcode(code)) || '';
+  const barcodes = symbols.map(symbol => ({
+   code: symbol.decode(), orientation: symbol.orientation, points: symbol.points,
+  }));
+  return barcodes.find(({code}) => decodePassport(code)) || barcodes.find(({code}) => parseBarcode(code));
  } catch {
   // La lecture ZXing reste disponible si le navigateur bloque WebAssembly.
-  return '';
+  return undefined;
+ }
+}
+
+async function captureBarcode(barcode, image) {
+ const {code} = barcode;
+ const decoded = decodePassport(code);
+ if (decoded?.format !== 'ASDA courte' || decoded.codes.race || !barcode.points?.length) return {code};
+ try {
+  const {readAsdaRace} = await import('./asda-race-reader.js');
+  return {code, raceCode:await readAsdaRace(image,barcode)};
+ } catch {
+  return {code};
  }
 }
 
@@ -101,14 +115,15 @@ export async function scanPassportVideo(video, onCode, signal) {
    if (canvas.height !== height) canvas.height = height;
    context.drawImage(video, 0, 0, width, height);
 
-   let code = await readWithZbar(canvas);
+   let barcode = await readWithZbar(canvas);
    if (signal.aborted) return;
-   if (!code) {
-    try { code = reader.decodeFromCanvas(canvas).getText(); } catch { /* Aucun code dans cette image. */ }
+   if (!barcode) {
+    try { barcode = {code:reader.decodeFromCanvas(canvas).getText()}; } catch { /* Aucun code dans cette image. */ }
    }
-   if (code && code !== previous) {
-    previous = code;
-    onCode(code);
+   if (barcode && barcode.code !== previous) {
+    previous = barcode.code;
+    const captured = await captureBarcode(barcode,canvas);
+    if (!signal.aborted) onCode(captured);
    }
   }
   if (!signal.aborted) await new Promise(resolve => setTimeout(resolve, 120));
@@ -135,11 +150,17 @@ export async function decodeBarcodePhoto(file,isCancelled=()=>false){
    const scale=Math.min(w===1||h===1?1:2,2400/Math.max(sw,sh));
    canvas.width=Math.round(sw*scale);canvas.height=Math.round(sh*scale);context.drawImage(bitmap,bitmap.width*x,bitmap.height*y,sw,sh,0,0,canvas.width,canvas.height);
    if (w===1 || h===1) {
-    const code = await readWithZbar(canvas);
+    const barcode = await readWithZbar(canvas);
     if (isCancelled()) throw new Error('cancelled');
-    if (code) return code;
+    if (barcode) {
+     const points = barcode.points.map(point => ({
+      x:bitmap.width*x + point.x*sw/canvas.width,
+      y:bitmap.height*y + point.y*sh/canvas.height,
+     }));
+     return await captureBarcode({...barcode,points},bitmap);
+    }
    }
-   try{return reader.decodeFromCanvas(canvas).getText()}catch{}
+   try{return {code:reader.decodeFromCanvas(canvas).getText()}}catch{}
    await new Promise(resolve=>setTimeout(resolve,0));
   }
   throw new Error('No barcode found');

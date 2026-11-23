@@ -64,7 +64,6 @@ function shortBirthDate(date, today) {
  return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === birth && birth <= today ? birth : '';
 }
 
-// Formats courts reconnus par le lecteur de Farm Animal Manager.
 export function decodePassport(value, today = new Date().toISOString().slice(0, 10)) {
  const fullAsda = parseAsda2007(value, today);
  if (fullAsda) return fullAsda;
@@ -72,15 +71,27 @@ export function decodePassport(value, today = new Date().toISOString().slice(0, 
  const raw = String(value ?? '').trim().toUpperCase().replace(/\s/g, '');
  const passport = raw.match(/^(\d{10})([12])(\d{2})(\d{2})(\d{2})(\d{6})\d$/);
  if (passport) {
-  const [, identifier, sex, race, father, mother, date] = passport;
+  const [, identifier, sex, father, mother, race, date] = passport;
   const birth = shortBirthDate(date, today);
   return birth ? passportDetails(identifier, birth, sex, {race, father, mother}, 'Passeport bovin (ITF)') : null;
  }
 
- // L’ASDA courte encode les races des parents et le cheptel de détention.
- const health = raw.match(/^FR(\d{10})([12])\d{4}(\d{6})\d(\d{2})(\d{2})\d{8}$/);
+ // ASDA à 38 caractères : statut, zone réservée, garantie et département,
+ // puis date JJMMAA, sexe, races et cheptel.
+ const health = raw.match(/^FR(\d{10})[012]9\d{3}(\d{6})([12])(\d{2})(\d{2})\d{8}$/);
  if (!health) return null;
- const [, identifier, sex, date, father, mother] = health;
+ const [, identifier, date, sex, father, mother] = health;
  const birth = shortBirthDate(date, today);
- return birth ? passportDetails(identifier, birth, sex, {father, mother}, 'ASDA courte') : null;
+ const codes = mother === '00' && father !== '00' ? {race: father} : {father, mother};
+ return birth ? passportDetails(identifier, birth, sex, codes, 'ASDA courte') : null;
+}
+
+export function decodePassportCapture(value, printedRaceCode) {
+ const decoded = decodePassport(value);
+ const printedRace = printedRaceCode && breedLabel(printedRaceCode);
+ if (decoded?.format === 'ASDA courte' && !decoded.codes.race && printedRace) {
+  decoded.codes.race = printedRaceCode;
+  decoded.fields.race = printedRace;
+ }
+ return decoded;
 }
